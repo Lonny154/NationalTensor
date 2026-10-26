@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import statistics
+import time
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -35,6 +36,7 @@ CONFIRM_WARMUPS = 10
 CONFIRM_ITERATIONS = 200
 DEFAULT_CONFIRMATION_PAIRS = 7
 DEFAULT_MIN_CONFIRMATION_SPEEDUP = 1.02
+MUSE_MODEL = "muse-spark-1.3"
 
 
 def balanced_rounds(requested):
@@ -201,7 +203,7 @@ def model_history(history, max_records=40):
     return concise
 
 
-def propose(client, history, tried):
+def propose(client, history, tried, *, audit=None):
     context = {
         "gpu": torch.cuda.get_device_name(0),
         "workload": {"M": M, "N": N, "K": K, "dtype": "fp16"},
@@ -239,7 +241,23 @@ def propose(client, history, tried):
         + json.dumps(context)
     )
     for attempt in range(3):
-        response = client.responses.create(model="muse-spark-1.3", input=prompt)
+        started = time.perf_counter()
+        try:
+            response = client.responses.create(model=MUSE_MODEL, input=prompt)
+        except Exception as exc:
+            if audit is not None:
+                audit({"attempt": attempt + 1, "model": MUSE_MODEL,
+                       "prompt": prompt, "response": None,
+                       "api_wall_s": time.perf_counter() - started,
+                       "error_type": type(exc).__name__})
+            raise
+        if audit is not None:
+            usage = getattr(response, "usage", None)
+            audit({"attempt": attempt + 1, "model": MUSE_MODEL,
+                   "prompt": prompt, "response": response.output_text,
+                   "response_id": getattr(response, "id", None),
+                   "usage": usage.model_dump() if hasattr(usage, "model_dump") else None,
+                   "api_wall_s": time.perf_counter() - started})
         raw = response.output_text.strip()
         if raw.startswith("```"):
             raw = "\n".join(raw.splitlines()[1:-1]).strip()
