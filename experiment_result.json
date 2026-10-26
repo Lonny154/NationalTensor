@@ -1,0 +1,44 @@
+{
+  "baseline": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "candidate": {
+    "block_m": 128,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 8,
+    "num_stages": 3,
+    "hypothesis": "M=512 N=3072 is B-dominant, current 64x128 causes 2x more B global traffic than A. Increasing BLOCK_M to 128 creates square 128x128 tile, halving B traffic and improving Tensor Core efficiency and L2 reuse. 8 warps handles 16k outputs per CTA with same per-thread work as baseline, improving occupancy and latency hiding on Ada 34 SMs. 96 CTAs still gives ~2.8 waves for load balance. Keep BLOCK_K=32 and stages=3 to keep shared at ~48KB for 2 CTAs per SM."
+  },
+  "hypothesis": "M=512 N=3072 is B-dominant, current 64x128 causes 2x more B global traffic than A. Increasing BLOCK_M to 128 creates square 128x128 tile, halving B traffic and improving Tensor Core efficiency and L2 reuse. 8 warps handles 16k outputs per CTA with same per-thread work as baseline, improving occupancy and latency hiding on Ada 34 SMs. 96 CTAs still gives ~2.8 waves for load balance. Keep BLOCK_K=32 and stages=3 to keep shared at ~48KB for 2 CTAs per SM.",
+  "baseline_ms": 0.07197246506418054,
+  "candidate_ms": 0.06971479469427355,
+  "speedup": 1.0323843795252894,
+  "correctness": true,
+  "measurements_ms": {
+    "baseline": [
+      0.07582340217195452,
+      0.07186774663785671,
+      0.07165269296206729,
+      0.0719578966498375,
+      0.07198703347852356,
+      0.07207090721318596,
+      0.07195217202001429,
+      0.07229861248480646
+    ],
+    "candidate": [
+      0.06923302219427646,
+      0.06977625502638085,
+      0.06987174710741749,
+      0.06909138725075141,
+      0.0694618956823098,
+      0.07008795862002347,
+      0.06965333436216627,
+      0.06980456641987356
+    ]
+  }
+}

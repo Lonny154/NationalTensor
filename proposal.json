@@ -1,0 +1,8 @@
+{
+  "block_m": 128,
+  "block_n": 128,
+  "block_k": 32,
+  "num_warps": 8,
+  "num_stages": 3,
+  "hypothesis": "M=512 N=3072 is B-dominant, current 64x128 causes 2x more B global traffic than A. Increasing BLOCK_M to 128 creates square 128x128 tile, halving B traffic and improving Tensor Core efficiency and L2 reuse. 8 warps handles 16k outputs per CTA with same per-thread work as baseline, improving occupancy and latency hiding on Ada 34 SMs. 96 CTAs still gives ~2.8 waves for load balance. Keep BLOCK_K=32 and stages=3 to keep shared at ~48KB for 2 CTAs per SM."
+}
