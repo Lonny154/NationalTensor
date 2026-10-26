@@ -10,13 +10,12 @@ import inspect
 import json
 import os
 from pathlib import Path
-import random
 import statistics
 
 from dotenv import load_dotenv
 from openai import OpenAI
 import torch
-import triton.testing
+from benchmark_core import run_paired
 from benchmark_proposal import launch, matmul_kernel
 
 M, N, K = 512, 3072, 768
@@ -30,6 +29,36 @@ ALLOWED = {
     "num_stages": [2, 3, 4],
 }
 FIELDS = tuple(ALLOWED)
+SCREEN_WARMUPS = 10
+SCREEN_ITERATIONS = 100
+CONFIRM_WARMUPS = 10
+CONFIRM_ITERATIONS = 200
+DEFAULT_CONFIRMATION_PAIRS = 7
+DEFAULT_MIN_CONFIRMATION_SPEEDUP = 1.02
+
+
+def balanced_rounds(requested):
+    """Honor the requested minimum while giving each side equal first turns."""
+    return requested + requested % 2
+
+
+def benchmark_method(screen_rounds, confirmation_pairs, min_speedup):
+    return {
+        "schema_version": 2,
+        "measurement_mode": "python_launch_cuda_event",
+        "timing_boundary": "CUDA-event block divided by launch count",
+        "screening": {"rounds": screen_rounds, "warmups": SCREEN_WARMUPS,
+                      "iterations_per_block": SCREEN_ITERATIONS},
+        "confirmation": {
+            "verification_pairs": confirmation_pairs,
+            "rounds": 2 * confirmation_pairs,
+            "warmups": CONFIRM_WARMUPS,
+            "iterations_per_block": CONFIRM_ITERATIONS,
+            "all_pairs_favor_candidate": True,
+            "minimum_median_pair_speedup": min_speedup,
+            "rule_type": "heuristic; not a statistical significance test",
+        },
+    }
 
 
 def key(config):
@@ -101,6 +130,14 @@ def load_history(runs_dir, expected):
             continue
         if is_legacy:
             legacy += 1
+        summary = {}
+        try:
+            summary_file = folder / "summary.json"
+            if summary_file.exists():
+                summary = json.loads(summary_file.read_text())
+        except (ValueError, OSError, TypeError):
+            pass
+        screened = summary.get("screening_winner") or {}
         try:
             with experiments_file.open() as f:
                 for line_num, line in enumerate(f, 1):
@@ -120,6 +157,16 @@ def load_history(runs_dir, expected):
                             "hypothesis": str(record.get("hypothesis", ""))[:900],
                             "status": record["status"],
                             "timing": record.get("timing"),
+                            "measurement_mode": (
+                                (record.get("timing") or {}).get("measurement_mode")
+                                or "legacy_triton_do_bench"
+                            ),
+                            "optimization_status": (
+                                screened.get("optimization_status",
+                                             summary.get("confirmation_status", "screening_only"))
+                                if screened.get("number") == record.get("number")
+                                else "screening_only"
+                            ),
                             "error": str(record.get("error", ""))[:500],
                             "legacy_unverified_kernel": is_legacy,
                         })
@@ -144,6 +191,10 @@ def model_history(history, max_records=40):
             "baseline_ms": t.get("baseline_ms"),
             "candidate_ms": t.get("candidate_ms"),
             "speedup": t.get("speedup"),
+            "median_paired_speedup": t.get("median_paired_speedup"),
+            "measurement_mode": record.get(
+                "measurement_mode", t.get("measurement_mode", "legacy_triton_do_bench")),
+            "optimization_status": record.get("optimization_status", "screening_only"),
             "error": record.get("error", "")[:200],
             "legacy_unverified_kernel": record.get("legacy_unverified_kernel", False),
         })
@@ -165,14 +216,17 @@ def propose(client, history, tried):
             "benchmark conditions. Never interpret past-vs-current absolute "
             "latencies as controlled comparisons. Historical runs without a "
             "kernel hash are marked legacy_unverified_kernel. A PASS means "
-            "numerical correctness, not performance improvement. No actual "
+            "numerical correctness and a completed screening measurement, not "
+            "a confirmed performance improvement. Legacy do_bench timings and "
+            "new paired CUDA-event timings use different methods. No actual "
             "memory traffic, register counts, or occupancy counters were collected."
         ),
         "method": (
-            "Triton do_bench, warmup=100ms, rep=200ms per sample, "
-            "baseline/candidate order randomized each round, medians reported; "
-            "numerical correctness checked against torch.mm. "
-            "These are screening results, not strong cross-session confirmation."
+            "Preallocated outputs; compile and warm both sides before timing; "
+            "Python-launch CUDA-event blocks divided by launch count; balanced "
+            "baseline/candidate order with every order recorded. Numerical "
+            "correctness checked against torch.mm. Screening speedups are "
+            "provisional; confirmation uses balanced two-round verification blocks."
         ),
     }
     prompt = (
@@ -214,37 +268,101 @@ def correct_output(a, b, reference, config):
     return out
 
 
-def compare(a, b, base_out, candidate_out, config, rounds, seed):
-    samples = {"baseline": [], "candidate": []}
-    jobs = {"baseline": (BASELINE, base_out),
-            "candidate": (config, candidate_out)}
-    rng = random.Random(seed)
-    for _ in range(rounds):
-        order = ["baseline", "candidate"]
-        rng.shuffle(order)
-        for name in order:
-            cfg, out = jobs[name]
-            ms = triton.testing.do_bench(
-                lambda cfg=cfg, out=out: launch(a, b, out, cfg),
-                warmup=100, rep=200,
-            )
-            samples[name].append(float(ms))
-    b_ms = statistics.median(samples["baseline"])
-    c_ms = statistics.median(samples["candidate"])
-    return {"baseline_ms": b_ms, "candidate_ms": c_ms,
-            "speedup": b_ms / c_ms, "samples_ms": samples}
+def compare(a, b, base_out, candidate_out, config, rounds, seed, *,
+            warmups=SCREEN_WARMUPS, iterations=SCREEN_ITERATIONS,
+            timer=None, synchronize=None):
+    """Keep old scalar fields while persisting the full paired evidence."""
+    outputs = iter((base_out, candidate_out))
+    paired = run_paired(
+        launch, a, b, BASELINE, config, rounds=rounds, seed=seed,
+        warmups=warmups, iterations=iterations,
+        output_factory=lambda _a, _b: next(outputs),
+        timer=timer, synchronize=synchronize,
+    )
+    return {
+        "benchmark_schema_version": 2,
+        "measurement_mode": "python_launch_cuda_event",
+        "baseline_ms": paired["baseline_ms"]["median"],
+        "candidate_ms": paired["candidate_ms"]["median"],
+        "speedup": paired["ratio_of_medians"],
+        "median_paired_speedup": paired["paired_ratios"]["median"],
+        "samples_ms": paired["samples_ms"],
+        "paired_rounds": paired["rounds"],
+        "statistics": {name: paired[name] for name in
+                       ("baseline_ms", "candidate_ms", "paired_ratios")},
+        "method": {**paired["method"], "measurement_mode": "python_launch"},
+    }
+
+
+def confirmation_decision(timing, required_pairs=DEFAULT_CONFIRMATION_PAIRS,
+                          min_speedup=DEFAULT_MIN_CONFIRMATION_SPEEDUP):
+    """Apply a conservative descriptive rule to balanced two-round blocks."""
+    rows = timing["paired_rounds"]
+    if len(rows) != 2 * required_pairs:
+        raise ValueError("confirmation must have exactly two rounds per verification pair")
+    ratios = []
+    for first, second in zip(rows[::2], rows[1::2]):
+        if first["order"] != list(reversed(second["order"])):
+            raise ValueError("verification pair is not order-balanced")
+        baseline = statistics.median((first["baseline_ms"], second["baseline_ms"]))
+        candidate = statistics.median((first["candidate_ms"], second["candidate_ms"]))
+        ratios.append(baseline / candidate)
+    median_ratio = statistics.median(ratios)
+    return {
+        "confirmed": all(ratio > 1.0 for ratio in ratios)
+                     and median_ratio >= min_speedup,
+        "verification_pair_speedups": ratios,
+        "median_verification_pair_speedup": median_ratio,
+        "pairs_favoring_candidate": sum(ratio > 1.0 for ratio in ratios),
+        "required_pairs": required_pairs,
+        "minimum_median_speedup": min_speedup,
+        "rule": "All balanced verification pairs favor candidate and median >= threshold",
+        "interpretation": "heuristic, not a statistical significance test",
+    }
+
+
+def select_screening_winner(session):
+    passing = [record for record in session if record["status"] == "PASS"
+               and record["timing"]["median_paired_speedup"] > 1.0]
+    return max(passing, key=lambda record: record["timing"]["median_paired_speedup"],
+               default=None)
+
+
+def apply_confirmation(summary, winner, timing, required_pairs, min_speedup):
+    decision = confirmation_decision(timing, required_pairs, min_speedup)
+    summary["confirmation"] = timing
+    summary["confirmation_decision"] = decision
+    summary["confirmation_improved"] = decision["confirmed"]
+    summary["confirmation_status"] = (
+        "confirmed" if decision["confirmed"] else "unconfirmed")
+    summary["screening_winner"] = {
+        **winner, "optimization_status": summary["confirmation_status"]}
+    if decision["confirmed"]:
+        summary["confirmed_winner"] = summary["screening_winner"]
+    return decision
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidates", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=8)
+    parser.add_argument("--confirmation-pairs", type=int,
+                        default=DEFAULT_CONFIRMATION_PAIRS,
+                        help="Balanced two-round verification blocks (default: 7)")
+    parser.add_argument("--min-confirmation-speedup", type=float,
+                        default=DEFAULT_MIN_CONFIRMATION_SPEEDUP,
+                        help="Minimum median verification-pair speedup (default: 1.02)")
     parser.add_argument("--runs-dir", default="runs")
     parser.add_argument("--show-history", action="store_true",
                         help="Inspect compatible past experiments without calling Muse")
     args = parser.parse_args()
     if args.candidates < 1 or args.repeats < 2:
         parser.error("Candidates >= 1 and repeats >= 2 required")
+    if args.confirmation_pairs < 1 or not (1.0 < args.min_confirmation_speedup < float("inf")):
+        parser.error("Confirmation pairs >= 1 and finite minimum speedup > 1 required")
+    screen_rounds = balanced_rounds(args.repeats)
+    method = benchmark_method(screen_rounds, args.confirmation_pairs,
+                              args.min_confirmation_speedup)
     load_dotenv()
     if not args.show_history and not os.getenv("MODEL_API_KEY"):
         parser.error("MODEL_API_KEY missing; add it to .env")
@@ -273,8 +391,7 @@ def main():
     (run_dir / "metadata.json").write_text(json.dumps({
         **identity,
         "created_utc": datetime.now(timezone.utc).isoformat(),
-        "method": {"repeats": args.repeats, "warmup_ms": 100,
-                   "rep_ms": 200, "randomized_pair_order": True},
+        "method": {**method, "requested_screening_rounds": args.repeats},
     }, indent=2))
 
     print(f"GPU: {gpu}")
@@ -312,8 +429,9 @@ def main():
         try:
             out = correct_output(a, b, reference, cfg)
             record["timing"] = compare(a, b, base_out, out, cfg,
-                                       args.repeats, seed=42 + i)
+                                       screen_rounds, seed=42 + i)
             record["status"] = "PASS"
+            record["optimization_status"] = "screening_only"
             t = record["timing"]
             print(f"PASS: {t['candidate_ms']:.6f} ms vs "
                   f"{t['baseline_ms']:.6f} ms ({t['speedup']:.4f}x)")
@@ -327,33 +445,40 @@ def main():
         history.append({"run": run_dir.name, **record})
 
     # Do not choose a losing candidate as the screening winner.
-    passing = [r for r in session if r["status"] == "PASS"
-               and r["timing"]["speedup"] > 1.0]
-    winner = max(passing, key=lambda r: r["timing"]["speedup"]) if passing else None
+    winner = select_screening_winner(session)
     summary = {**identity,
-               "method": {"repeats": args.repeats, "warmup_ms": 100,
-                          "rep_ms": 200, "randomized_pair_order": True},
+               "method": {**method, "requested_screening_rounds": args.repeats},
                "historical_experiments_loaded": len(previous),
-               "experiments_attempted": len(session), "screening_winner": winner}
+               "experiments_attempted": len(session), "screening_winner": winner,
+               "confirmation_status": "not_run", "confirmed_winner": None}
     if winner:
         print("\nRechecking screening winner...")
         try:
             out = correct_output(a, b, reference, winner["config"])
             confirmation = compare(
                 a, b, base_out, out, winner["config"],
-                max(12, args.repeats), seed=2026)
-            summary["confirmation"] = confirmation
-            summary["confirmation_improved"] = confirmation["speedup"] > 1.0
-            print(f"Confirmation: {confirmation['speedup']:.4f}x")
-            if not summary["confirmation_improved"]:
+                2 * args.confirmation_pairs, seed=2026,
+                warmups=CONFIRM_WARMUPS, iterations=CONFIRM_ITERATIONS)
+            decision = apply_confirmation(
+                summary, winner, confirmation, args.confirmation_pairs,
+                args.min_confirmation_speedup)
+            print(f"Confirmation median verification-pair speedup: "
+                  f"{decision['median_verification_pair_speedup']:.4f}x; "
+                  f"{decision['pairs_favoring_candidate']}/"
+                  f"{decision['required_pairs']} pairs favor candidate")
+            if not decision["confirmed"]:
                 print("No confirmed improvement over baseline this session")
         except Exception as exc:
             summary["confirmation_error"] = str(exc)
+            summary["confirmation_status"] = "error"
+            summary["screening_winner"] = {
+                **winner, "optimization_status": "unconfirmed"}
     else:
         print("\nNo candidate beat baseline in screening; baseline remains best")
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
     print(f"\nSaved results to {run_dir}")
-    print("Small speedups are provisional until independently reproduced.")
+    print("Confirmation is a heuristic, not a statistical significance test; "
+          "reproduce promising results independently.")
 
 
 if __name__ == "__main__":
