@@ -7,3 +7,5 @@ __pycache__/
 runs/
 .pytest_cache/
 smoke_results/
+evaluations/
+evaluations/
