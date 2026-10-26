@@ -328,6 +328,22 @@ def select_screening_winner(session):
                default=None)
 
 
+def screening_report(record):
+    timing = record["timing"]
+    return (f"PASS: candidate {timing['candidate_ms']:.6f} ms vs "
+            f"baseline {timing['baseline_ms']:.6f} ms; "
+            f"ratio of medians (baseline/candidate) {timing['speedup']:.4f}x; "
+            f"median paired speedup {timing['median_paired_speedup']:.4f}x "
+            "(screening selection metric)")
+
+
+def screening_winner_report(winner):
+    return (f"Screening winner: experiment {winner['number']} "
+            f"{winner['config']}; median paired speedup "
+            f"{winner['timing']['median_paired_speedup']:.4f}x "
+            "(screening selection metric)")
+
+
 def apply_confirmation(summary, winner, timing, required_pairs, min_speedup):
     decision = confirmation_decision(timing, required_pairs, min_speedup)
     summary["confirmation"] = timing
@@ -432,9 +448,7 @@ def main():
                                        screen_rounds, seed=42 + i)
             record["status"] = "PASS"
             record["optimization_status"] = "screening_only"
-            t = record["timing"]
-            print(f"PASS: {t['candidate_ms']:.6f} ms vs "
-                  f"{t['baseline_ms']:.6f} ms ({t['speedup']:.4f}x)")
+            print(screening_report(record))
         except Exception as exc:
             record["status"] = "FAIL"
             record["error"] = f"{type(exc).__name__}: {exc}"[:1500]
@@ -452,7 +466,8 @@ def main():
                "experiments_attempted": len(session), "screening_winner": winner,
                "confirmation_status": "not_run", "confirmed_winner": None}
     if winner:
-        print("\nRechecking screening winner...")
+        print(f"\n{screening_winner_report(winner)}")
+        print("Rechecking screening winner...")
         try:
             out = correct_output(a, b, reference, winner["config"])
             confirmation = compare(

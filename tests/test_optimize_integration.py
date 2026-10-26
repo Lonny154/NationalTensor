@@ -103,6 +103,31 @@ class OptimizeIntegrationTests(unittest.TestCase):
         self.assertEqual(summary["screening_winner"]["optimization_status"],
                          "unconfirmed")
 
+    def test_screening_report_labels_both_metrics_and_selected_winner(self):
+        # These rounded values reflect the latest run, where the metrics
+        # straddled 1.0x and the paired metric triggered confirmation.
+        record = {
+            "number": 1, "config": {**optimize.BASELINE, "num_warps": 8,
+                                    "num_stages": 4}, "status": "PASS",
+            "timing": {
+                "baseline_ms": 0.0636244797706604,
+                "candidate_ms": 0.06426111936569213,
+                "speedup": 0.9900929270869248,
+                "median_paired_speedup": 1.0019634592330608,
+            },
+        }
+        other = {"status": "PASS", "timing": {
+            "median_paired_speedup": 0.9766540443225036}}
+        self.assertIs(optimize.select_screening_winner([record, other]), record)
+        report = optimize.screening_report(record)
+        self.assertIn("ratio of medians (baseline/candidate) 0.9901x", report)
+        self.assertIn("median paired speedup 1.0020x "
+                      "(screening selection metric)", report)
+        winner_report = optimize.screening_winner_report(record)
+        self.assertIn("Screening winner: experiment 1", winner_report)
+        self.assertIn("median paired speedup 1.0020x "
+                      "(screening selection metric)", winner_report)
+
     def test_history_reads_legacy_and_new_timings_without_reinterpreting(self):
         with tempfile.TemporaryDirectory() as root:
             runs = Path(root)
