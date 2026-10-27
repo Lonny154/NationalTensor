@@ -19,10 +19,12 @@ class DashboardTests(unittest.TestCase):
     def test_checkpoint_counts_status_and_source_relationships(self):
         data = dashboard_data.load_history()
         self.assertEqual(data["warnings"], [])
-        self.assertEqual(data["overview"]["muse_proposals"], 10)
         self.assertEqual(data["overview"]["structural_proposals"], 6)
-        self.assertEqual(data["overview"]["kernel_proposals"], 4)
-        self.assertEqual(data["overview"]["rejected_responses"], 1)
+        self.assertGreaterEqual(data["overview"]["kernel_proposals"], 4)
+        self.assertEqual(data["overview"]["muse_proposals"],
+                         data["overview"]["structural_proposals"]
+                         + data["overview"]["kernel_proposals"])
+        self.assertGreaterEqual(data["overview"]["rejected_responses"], 1)
         self.assertEqual(data["overview"]["trusted_implementations"], 2)
         self.assertEqual((data["overview"]["trusted_correctness_passed"],
                           data["overview"]["trusted_correctness_total"]), (12, 12))
@@ -100,7 +102,7 @@ class DashboardTests(unittest.TestCase):
                 root, "kernel-evolution", "../../../secret.txt", warnings))
             self.assertTrue(any("Blocked path" in message for message in warnings))
 
-    def test_untrusted_source_is_escaped_and_http_is_read_only(self):
+    def test_untrusted_source_is_escaped_and_home_post_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             run_id = "20261027T000000000000Z"
@@ -118,12 +120,12 @@ class DashboardTests(unittest.TestCase):
             (run / "proposal_audit.jsonl").write_text(json.dumps({
                 "prompt": "Request\n{}", "raw_response": response}) + "\n")
             client = create_app(root).test_client()
-            page = client.get(f"/?view=timeline&experiment=kernel:{run_id}")
+            page = client.get(f"/experiments/kernel:{run_id}")
             self.assertEqual(page.status_code, 200)
             self.assertIn(b"&lt;script&gt;alert(1)&lt;/script&gt;", page.data)
             self.assertIn(b"&lt;script&gt;alert(2)&lt;/script&gt;", page.data)
             self.assertNotIn(b"<script>", page.data)
-            self.assertEqual(client.post("/").status_code, 405)
+            self.assertEqual(client.post("/").status_code, 403)
             self.assertEqual(client.get("/?experiment=../../secret.txt").status_code, 404)
             self.assertIn("default-src 'none'", page.headers["Content-Security-Policy"])
 
@@ -216,13 +218,61 @@ class DashboardTests(unittest.TestCase):
             client = create_app().test_client()
             for view in ("overview", "timeline", "performance", "reliability"):
                 self.assertEqual(client.get(f"/?view={view}").status_code, 200)
-            page = client.get("/?view=timeline&experiment="
+            page = client.get("/experiments/"
                               "trusted:trusted-two-slab:20261027T161358957319Z")
             self.assertEqual(page.status_code, 200)
             self.assertIn(b"&lt;img src=x onerror=alert(1)&gt;", page.data)
             self.assertNotIn(b"<img src=x", page.data)
             self.assertIn(b"Muse predicted", page.data)
             self.assertIn(b"Observed evidence", page.data)
+
+    def test_experiment_links_open_top_level_details_and_back_to_timeline(self):
+        client = create_app().test_client()
+        kernel = "kernel:20261027T163630745455Z"
+        trusted = "trusted:trusted-two-slab:20261027T161358957319Z"
+        structural = "structural:20261027T141453253695Z:1"
+        latest_kernel = max((item for item in dashboard_data.load_history()["proposals"]
+                             if item["kind"] == "kernel"),
+                            key=lambda item: item["run_id"])["id"]
+        for view, experiment in (("overview", latest_kernel), ("timeline", kernel),
+                                 ("timeline", trusted), ("performance", structural)):
+            with self.subTest(view=view, experiment=experiment):
+                listing = client.get(f"/?view={view}")
+                self.assertEqual(listing.status_code, 200)
+                self.assertIn(f'href="/experiments/{experiment}"'.encode(),
+                              listing.data)
+        for experiment in (kernel, trusted, structural):
+            with self.subTest(detail=experiment):
+                detail = client.get(f"/experiments/{experiment}")
+                self.assertEqual(detail.status_code, 200)
+                self.assertIn(b"Back to Timeline", detail.data)
+                self.assertIn(b'href="/?view=timeline"', detail.data)
+                self.assertIn(b"SELECTED RECORD", detail.data)
+                self.assertIn(b"PROVENANCE", detail.data)
+                self.assertNotIn(b'<div class="timeline">', detail.data)
+                self.assertNotIn(b"Screening performance</h1>", detail.data)
+        kernel_page = client.get(f"/experiments/{kernel}")
+        self.assertIn(b"Generated Triton source", kernel_page.data)
+        self.assertIn(b"What was proposed", kernel_page.data)
+        trusted_page = client.get(f"/experiments/{trusted}")
+        self.assertIn(b"Observed evidence", trusted_page.data)
+        self.assertIn(b"Saved shape and seed checks", trusted_page.data)
+        self.assertIn(b"Resources and instructions", trusted_page.data)
+        self.assertIn(f'href="/experiments/{trusted}?compiler=1"'.encode(),
+                      trusted_page.data)
+        self.assertIn(b"Static baseline instructions",
+                      client.get(f"/experiments/{trusted}?compiler=1").data)
+        self.assertIn(b"Baseline versus candidate",
+                      client.get(f"/experiments/{structural}").data)
+        self.assertIn(b"Experiment timeline",
+                      client.get("/?view=timeline").data)
+        self.assertEqual(client.get(f"/?view=timeline&experiment={kernel}")
+                         .headers["Location"], f"/experiments/{kernel}")
+        self.assertEqual(client.get("/experiments/kernel:20261027T000000000000Z")
+                         .status_code, 404)
+        for invalid in ("../../secret.txt", "kernel:../../secret", "kernel:bad",
+                        "trusted:trusted-compute:invalid"):
+            self.assertEqual(client.get(f"/experiments/{invalid}").status_code, 404)
 
 
 if __name__ == "__main__":

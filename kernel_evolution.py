@@ -618,8 +618,10 @@ def append_jsonl(path, record):
 
 def propose_to_directory(client, prompt, root, *, feedback_from=None,
                          review_from=None, trusted_feedback=None, gpu=None,
-                         hardware=None):
+                         hardware=None, max_attempts=3, on_response=None):
     """One accepted candidate at most; rejected responses remain in the audit."""
+    if not 1 <= max_attempts <= 3:
+        raise ValueError("max_attempts must be between 1 and 3")
     folder = root / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     folder.mkdir(parents=True, exist_ok=False)
     audit_path = folder / "proposal_audit.jsonl"
@@ -643,7 +645,7 @@ def propose_to_directory(client, prompt, root, *, feedback_from=None,
                     (trusted_feedback or {}).get("trusted_implementation_sha256")}
     (folder / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
     current_prompt = prompt
-    for attempt in range(1, 4):
+    for attempt in range(1, max_attempts + 1):
         started = time.perf_counter()
         try:
             response = client.responses.create(model=MODEL, input=current_prompt)
@@ -651,9 +653,12 @@ def propose_to_directory(client, prompt, root, *, feedback_from=None,
             append_jsonl(audit_path, {"attempt": attempt, "prompt": current_prompt,
                                       "error_type": type(exc).__name__,
                                       "api_wall_s": time.perf_counter() - started})
-            metadata["error"] = f"{type(exc).__name__}: {str(exc)[:500]}"
+            # API exception text may contain request headers or credentials.
+            metadata["error"] = type(exc).__name__
             break
         raw = response.output_text
+        if on_response is not None:
+            on_response()
         audit = {"attempt": attempt, "prompt": current_prompt, "raw_response": raw,
                  "response_id": getattr(response, "id", None),
                  "api_wall_s": time.perf_counter() - started}
@@ -675,7 +680,8 @@ def propose_to_directory(client, prompt, root, *, feedback_from=None,
                          "static_findings": findings})
         break
     if metadata["status"] == "proposal_incomplete" and "error" not in metadata:
-        metadata["error"] = "no source passed the review filter in three attempts"
+        metadata["error"] = (
+            f"no source passed the review filter in {max_attempts} attempt(s)")
     (folder / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return folder, metadata
 

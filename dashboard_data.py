@@ -209,6 +209,12 @@ def _kernel(root: Path, warnings: list[str]) -> tuple[list[dict], int]:
             "source_hash_valid": hash_valid,
             "static_status": (metadata.get("static_findings") or {}).get(
                 "ast_check", "unknown"),
+            "static_findings": metadata.get("static_findings") or {},
+            "audit_attempts": [{"attempt": row.get("attempt"),
+                                "response_id": row.get("response_id"),
+                                "api_wall_s": row.get("api_wall_s"),
+                                "rejection": row.get("rejection")}
+                               for row in audits],
             "generated_status": metadata.get("status"),
             "correctness": "not evaluated", "outcome": "unevaluated",
             "confirmed": False, "timing": None, "aa": None,
