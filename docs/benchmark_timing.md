@@ -81,3 +81,30 @@ same evidence for confirmation, its decision and status, and the benchmark
 policy. Older `do_bench` history remains readable and is labeled
 `legacy_triton_do_bench` when loaded. Results from the two methods should not
 be pooled as interchangeable measurements.
+
+## Opt-in structural schedule experiment
+
+`python optimize.py --structural` asks Muse for JSON containing only `schedule`
+and a testable `hypothesis`. The allowlist is `direct_2d` and `grouped_m4`.
+All numeric parameters remain at 64×128×32, 4 warps, and 3 stages. The direct
+schedule is the baseline, so one grouped candidate can be evaluated per
+compatible history. Use a fresh `--runs-dir` for an independent repeat.
+Without `--structural`, the numeric optimization CLI keeps its existing search.
+
+Structural correctness uses unscaled FP16 inputs (seed 42) and `torch.mm`
+with FP16 reduced-precision reduction disabled only while creating the
+reference. The helper preserves the caller's split-K setting, disables FP16
+accumulation when supported, and restores all changed settings afterward,
+including on failure. The existing `rtol=0.02, atol=0.02` check applies to
+both schedules. The reference policy and observed backend settings are saved
+in run metadata, the experiment record, and the summary. These backend flags
+are process-wide, so reference generation should remain serial.
+
+Structural runs retain the same paired CUDA-event screening, raw order and
+timings, and confirmation heuristic described above. Their metadata carries
+an explicit structural search mode and fingerprints for both reviewed kernels,
+dispatch, benchmark core, and reference helper. Structural history loading
+requires an explicit schedule in each configuration and an exact mode/source
+identity. Numeric history, including older records without schedule identity,
+is never treated as structural evidence. Idle-associated first-block timing
+anomalies remain possible; no settling block or outlier removal is applied.

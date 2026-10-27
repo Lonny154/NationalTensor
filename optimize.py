@@ -16,8 +16,11 @@ import time
 from dotenv import load_dotenv
 from openai import OpenAI
 import torch
+import benchmark_core
 from benchmark_core import run_paired
 from benchmark_proposal import launch, matmul_kernel
+import grouped_matmul
+import reference_precision
 
 M, N, K = 512, 3072, 768
 BASELINE = dict(block_m=64, block_n=128, block_k=32,
@@ -37,6 +40,9 @@ CONFIRM_ITERATIONS = 200
 DEFAULT_CONFIRMATION_PAIRS = 7
 DEFAULT_MIN_CONFIRMATION_SPEEDUP = 1.02
 MUSE_MODEL = "muse-spark-1.3"
+STRUCTURAL_MODE = "structural_schedule_v1"
+STRUCTURAL_SCHEDULES = (grouped_matmul.DIRECT_2D, grouped_matmul.GROUPED_M4)
+STRUCTURAL_BASELINE = {**BASELINE, "schedule": grouped_matmul.DIRECT_2D}
 
 
 def balanced_rounds(requested):
@@ -74,10 +80,67 @@ def valid_config(config):
     )
 
 
+def valid_structural_config(config):
+    return (isinstance(config, dict)
+            and set(config) == set(FIELDS) | {"schedule"}
+            and type(config["schedule"]) is str
+            and config["schedule"] in STRUCTURAL_SCHEDULES
+            and all(type(config[name]) is int and config[name] == BASELINE[name]
+                    for name in FIELDS))
+
+
+def parse_structural_proposal(raw, tried):
+    """Accept only a reviewed schedule and a nonempty hypothesis in JSON."""
+    obj = json.loads(raw)
+    if not isinstance(obj, dict) or set(obj) != {"schedule", "hypothesis"}:
+        raise ValueError("Expected only schedule and hypothesis fields")
+    schedule = obj["schedule"]
+    if type(schedule) is not str or schedule not in STRUCTURAL_SCHEDULES:
+        raise ValueError("Schedule must be direct_2d or grouped_m4")
+    if schedule in tried:
+        raise ValueError("Schedule already tested or is the baseline")
+    hypothesis = obj["hypothesis"]
+    if not isinstance(hypothesis, str) or not hypothesis.strip():
+        raise ValueError("Missing hypothesis")
+    return {**BASELINE, "schedule": schedule}, hypothesis.strip()
+
+
 def kernel_signature():
     """Fingerprint the launcher and JIT source to avoid mixing changed kernels."""
     source = inspect.getsource(launch) + "\n" + inspect.getsource(matmul_kernel.fn)
     return hashlib.sha256(source.encode()).hexdigest()
+
+
+def structural_source_fingerprints():
+    """Pin both reviewed kernels, dispatch, timing core, and reference helper."""
+    def source_hash(source):
+        return hashlib.sha256(source.encode()).hexdigest()
+
+    return {
+        "direct_kernel_and_launcher": kernel_signature(),
+        "grouped_kernel_and_launcher": source_hash(
+            inspect.getsource(grouped_matmul.grouped_matmul_kernel.fn)
+            + inspect.getsource(grouped_matmul.launch_grouped)),
+        "schedule_dispatcher": source_hash(inspect.getsource(grouped_matmul.launch_scheduled)),
+        "benchmark_core_file": hashlib.sha256(
+            Path(benchmark_core.__file__).read_bytes()).hexdigest(),
+        "reference_precision_file": hashlib.sha256(
+            Path(reference_precision.__file__).read_bytes()).hexdigest(),
+        "structural_correctness": source_hash(inspect.getsource(correct_structural_output)),
+        "structural_paired_adapter": source_hash(inspect.getsource(compare_structural)),
+        "confirmation_rule": source_hash(inspect.getsource(confirmation_decision)),
+    }
+
+
+def structural_identity(gpu):
+    return {
+        "search_mode": STRUCTURAL_MODE,
+        "gpu": gpu, "shape": [M, N, K], "dtype": "fp16",
+        "baseline": STRUCTURAL_BASELINE,
+        "allowed_schedules": list(STRUCTURAL_SCHEDULES),
+        "source_sha256": structural_source_fingerprints(),
+        "reference_precision_policy": "fp16_torch_mm_without_reduced_precision_reduction",
+    }
 
 
 def run_identity(gpu):
@@ -92,6 +155,12 @@ def run_identity(gpu):
 
 def matches_identity(meta, expected):
     """Allow legacy runs without a hash, but label them as unverified."""
+    if expected.get("search_mode") == STRUCTURAL_MODE:
+        required = ("search_mode", "gpu", "shape", "dtype", "baseline",
+                    "allowed_schedules", "source_sha256", "reference_precision_policy")
+        return all(meta.get(name) == expected[name] for name in required), False
+    if meta.get("search_mode") is not None:
+        return False, False
     if any(meta.get(k) != expected[k] for k in ("gpu", "shape", "baseline")):
         return False, False
     if meta.get("dtype", "fp16") != expected["dtype"]:
@@ -107,6 +176,7 @@ def load_history(runs_dir, expected):
     rows = []
     skipped = 0
     legacy = 0
+    structural = expected.get("search_mode") == STRUCTURAL_MODE
     if not runs_dir.exists():
         return rows, skipped, legacy
 
@@ -147,7 +217,10 @@ def load_history(runs_dir, expected):
                         continue
                     try:
                         record = json.loads(line)
-                        if (not valid_config(record.get("config")) or
+                        if (not (valid_structural_config(record.get("config"))
+                                 if structural else
+                                 valid_config(record.get("config")) and
+                                 "schedule" not in record["config"]) or
                                 record.get("status") not in {"PASS", "FAIL"}):
                             continue
                         # Each record has source + session identity. Keep numerical
@@ -155,7 +228,10 @@ def load_history(runs_dir, expected):
                         rows.append({
                             "run": folder.name,
                             "number": record.get("number", line_num),
-                            "config": {n: record["config"][n] for n in FIELDS},
+                            "config": ({**{n: record["config"][n] for n in FIELDS},
+                                        "schedule": record["config"]["schedule"]}
+                                       if structural else
+                                       {n: record["config"][n] for n in FIELDS}),
                             "hypothesis": str(record.get("hypothesis", ""))[:900],
                             "status": record["status"],
                             "timing": record.get("timing"),
@@ -278,6 +354,54 @@ def propose(client, history, tried, *, audit=None):
     raise RuntimeError("Muse did not provide a valid new configuration")
 
 
+def propose_structural(client, history, tried, *, method=None, audit=None):
+    """Ask Muse for JSON data only; never execute model supplied code."""
+    context = {
+        "gpu": torch.cuda.get_device_name(0),
+        "workload": {"M": M, "N": N, "K": K, "dtype": "fp16"},
+        "fixed_numeric_config": BASELINE,
+        "allowed_schedules": list(STRUCTURAL_SCHEDULES),
+        "previously_tested_schedules": sorted(tried),
+        "recent_structural_experiments": model_history(history),
+        "measurement": method or benchmark_method(
+            8, DEFAULT_CONFIRMATION_PAIRS, DEFAULT_MIN_CONFIRMATION_SPEEDUP),
+        "interpretation": "A screening PASS is not a confirmed improvement.",
+    }
+    prompt = (
+        "Propose exactly one untested reviewed GEMM schedule for this workload. "
+        "Keep block_m=64, block_n=128, block_k=32, num_warps=4, num_stages=3. "
+        "State a falsifiable performance hypothesis based on tile ordering and "
+        "reuse; do not invent profiler measurements. Return ONLY a JSON object "
+        "with exactly two fields: schedule (direct_2d or grouped_m4) and "
+        "hypothesis (a nonempty string). No code or numeric parameters.\n"
+        + json.dumps(context)
+    )
+    for attempt in range(3):
+        started = time.perf_counter()
+        try:
+            response = client.responses.create(model=MUSE_MODEL, input=prompt)
+        except Exception as exc:
+            if audit is not None:
+                audit({"attempt": attempt + 1, "model": MUSE_MODEL,
+                       "prompt": prompt, "response": None,
+                       "api_wall_s": time.perf_counter() - started,
+                       "error_type": type(exc).__name__})
+            raise
+        if audit is not None:
+            usage = getattr(response, "usage", None)
+            audit({"attempt": attempt + 1, "model": MUSE_MODEL,
+                   "prompt": prompt, "response": response.output_text,
+                   "response_id": getattr(response, "id", None),
+                   "usage": usage.model_dump() if hasattr(usage, "model_dump") else None,
+                   "api_wall_s": time.perf_counter() - started})
+        try:
+            return parse_structural_proposal(response.output_text.strip(), tried)
+        except (ValueError, TypeError) as exc:
+            print(f"  Structural proposal rejected ({attempt + 1}/3): {exc}")
+            prompt += f"\nPrevious response invalid: {exc}. Choose an untested allowed schedule."
+    raise RuntimeError("Muse did not provide a valid untested schedule")
+
+
 def correct_output(a, b, reference, config):
     out = torch.empty((M, N), device="cuda", dtype=torch.float16)
     launch(a, b, out, config)
@@ -286,13 +410,25 @@ def correct_output(a, b, reference, config):
     return out
 
 
+def correct_structural_output(a, b, reference, config):
+    if not valid_structural_config(config):
+        raise ValueError("Invalid structural configuration")
+    out = torch.empty((a.shape[0], b.shape[1]), device=a.device, dtype=a.dtype)
+    grouped_matmul.launch_scheduled(a, b, out, config)
+    torch.cuda.synchronize()
+    torch.testing.assert_close(out, reference, rtol=0.02, atol=0.02)
+    return out
+
+
 def compare(a, b, base_out, candidate_out, config, rounds, seed, *,
             warmups=SCREEN_WARMUPS, iterations=SCREEN_ITERATIONS,
-            timer=None, synchronize=None):
+            timer=None, synchronize=None, launcher=None, baseline_config=None):
     """Keep old scalar fields while persisting the full paired evidence."""
     outputs = iter((base_out, candidate_out))
+    launcher = launcher or launch
+    baseline_config = baseline_config or BASELINE
     paired = run_paired(
-        launch, a, b, BASELINE, config, rounds=rounds, seed=seed,
+        launcher, a, b, baseline_config, config, rounds=rounds, seed=seed,
         warmups=warmups, iterations=iterations,
         output_factory=lambda _a, _b: next(outputs),
         timer=timer, synchronize=synchronize,
@@ -310,6 +446,19 @@ def compare(a, b, base_out, candidate_out, config, rounds, seed, *,
                        ("baseline_ms", "candidate_ms", "paired_ratios")},
         "method": {**paired["method"], "measurement_mode": "python_launch"},
     }
+
+
+def compare_structural(a, b, base_out, candidate_out, config, rounds, seed, **kwargs):
+    if not valid_structural_config(config):
+        raise ValueError("Invalid structural configuration")
+    timing = compare(
+        a, b, base_out, candidate_out, config, rounds, seed,
+        launcher=grouped_matmul.launch_scheduled,
+        baseline_config=STRUCTURAL_BASELINE, **kwargs,
+    )
+    timing["baseline_schedule"] = grouped_matmul.DIRECT_2D
+    timing["candidate_schedule"] = config["schedule"]
+    return timing
 
 
 def confirmation_decision(timing, required_pairs=DEFAULT_CONFIRMATION_PAIRS,
@@ -376,9 +525,116 @@ def apply_confirmation(summary, winner, timing, required_pairs, min_speedup):
     return decision
 
 
+def run_structural(args, gpu, method, runs_dir):
+    """Opt-in one-choice Muse experiment isolated from numeric tuning history."""
+    identity = structural_identity(gpu)
+    previous, skipped, _ = load_history(runs_dir, identity)
+    tried = {grouped_matmul.DIRECT_2D} | {
+        record["config"]["schedule"] for record in previous
+    }
+    if args.show_history:
+        print(f"GPU: {gpu}; structural history: {len(previous)} experiments")
+        print(f"Previously tested schedules: {', '.join(sorted(tried))}")
+        print(f"Skipped incompatible/corrupt runs: {skipped}")
+        return
+    if grouped_matmul.GROUPED_M4 in tried:
+        print("Grouped-M4 already tested in compatible structural history; "
+              "use a fresh --runs-dir for an independent run")
+        return
+
+    run_dir = runs_dir / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    run_dir.mkdir(parents=True)
+    metadata_path = run_dir / "metadata.json"
+    metadata = {**identity, "created_utc": datetime.now(timezone.utc).isoformat(),
+                "model": MUSE_MODEL,
+                "method": {**method, "requested_screening_rounds": args.repeats},
+                "correctness_tolerance": {"rtol": 0.02, "atol": 0.02},
+                "input_seed": 42, "input_distribution": "torch.randn FP16, unscaled"}
+    metadata_path.write_text(json.dumps(metadata, indent=2))
+
+    torch.manual_seed(42)
+    a = torch.randn((M, K), device="cuda", dtype=torch.float16)
+    b = torch.randn((K, N), device="cuda", dtype=torch.float16)
+    reference, reference_policy = reference_precision.fp16_mm_reference(a, b)
+    metadata["reference_precision"] = reference_policy
+    metadata_path.write_text(json.dumps(metadata, indent=2))
+    base_out = correct_structural_output(a, b, reference, STRUCTURAL_BASELINE)
+    print(f"GPU: {gpu}; baseline correctness PASS; results: {run_dir}")
+
+    client = OpenAI(base_url="https://api.meta.ai/v1", api_key=os.environ["MODEL_API_KEY"])
+    audit_path = run_dir / "proposal_audit.jsonl"
+
+    def audit(entry):
+        with audit_path.open("a") as stream:
+            stream.write(json.dumps(entry) + "\n")
+
+    session = []
+    summary = {**identity, "reference_precision": reference_policy,
+               "method": metadata["method"],
+               "historical_experiments_loaded": len(previous),
+               "experiments_attempted": 0, "screening_winner": None,
+               "confirmation_status": "not_run", "confirmed_winner": None}
+    try:
+        config, hypothesis = propose_structural(
+            client, previous, tried, method=method, audit=audit)
+    except Exception as exc:
+        summary["proposal_error"] = f"{type(exc).__name__}: {exc}"[:500]
+        summary["run_status"] = "incomplete"
+        (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
+        print(f"Structural proposal failed: {summary['proposal_error']}")
+        return
+
+    tried.add(config["schedule"])
+    record = {"number": 1, "config": config, "schedule": config["schedule"],
+              "hypothesis": hypothesis, "source_sha256": identity["source_sha256"],
+              "reference_precision": reference_policy}
+    try:
+        out = correct_structural_output(a, b, reference, config)
+        record["timing"] = compare_structural(
+            a, b, base_out, out, config, method["screening"]["rounds"], seed=43)
+        record["status"] = "PASS"
+        record["optimization_status"] = "screening_only"
+        print(screening_report(record))
+    except Exception as exc:
+        record["status"] = "FAIL"
+        record["error"] = f"{type(exc).__name__}: {exc}"[:1500]
+        print(f"Rejected: {record['error']}")
+    (run_dir / "experiments.jsonl").write_text(json.dumps(record) + "\n")
+    session.append(record)
+
+    winner = select_screening_winner(session)
+    summary["experiments_attempted"] = 1
+    summary["screening_winner"] = winner
+    if winner:
+        print(screening_winner_report(winner))
+        try:
+            out = correct_structural_output(a, b, reference, config)
+            confirmation = compare_structural(
+                a, b, base_out, out, config,
+                2 * args.confirmation_pairs, seed=2026,
+                warmups=CONFIRM_WARMUPS, iterations=CONFIRM_ITERATIONS)
+            decision = apply_confirmation(
+                summary, winner, confirmation, args.confirmation_pairs,
+                args.min_confirmation_speedup)
+            print(f"Confirmation: {decision['pairs_favoring_candidate']}/"
+                  f"{decision['required_pairs']} pairs favor grouped; "
+                  f"status {summary['confirmation_status']}")
+        except Exception as exc:
+            summary["confirmation_error"] = f"{type(exc).__name__}: {exc}"[:1500]
+            summary["confirmation_status"] = "error"
+            summary["screening_winner"] = {
+                **winner, "optimization_status": "unconfirmed"}
+    summary["run_status"] = "complete"
+    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
+    print(f"Saved structural run to {run_dir}")
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--candidates", type=int, default=5)
+    parser.add_argument("--structural", action="store_true",
+                        help="Opt-in reviewed schedule search with fixed numeric settings")
+    parser.add_argument("--candidates", type=int,
+                        help="Evaluated candidates (default: 5 numeric, 1 structural)")
     parser.add_argument("--repeats", type=int, default=8)
     parser.add_argument("--confirmation-pairs", type=int,
                         default=DEFAULT_CONFIRMATION_PAIRS,
@@ -390,8 +646,12 @@ def main():
     parser.add_argument("--show-history", action="store_true",
                         help="Inspect compatible past experiments without calling Muse")
     args = parser.parse_args()
+    if args.candidates is None:
+        args.candidates = 1 if args.structural else 5
     if args.candidates < 1 or args.repeats < 2:
         parser.error("Candidates >= 1 and repeats >= 2 required")
+    if args.structural and args.candidates != 1:
+        parser.error("Structural mode has one non-baseline schedule; use --candidates 1")
     if args.confirmation_pairs < 1 or not (1.0 < args.min_confirmation_speedup < float("inf")):
         parser.error("Confirmation pairs >= 1 and finite minimum speedup > 1 required")
     screen_rounds = balanced_rounds(args.repeats)
@@ -404,6 +664,9 @@ def main():
         parser.error("CUDA not available")
 
     gpu = torch.cuda.get_device_name(0)
+    if args.structural:
+        run_structural(args, gpu, method, Path(args.runs_dir))
+        return
     identity = run_identity(gpu)
     runs_dir = Path(args.runs_dir)
     previous, skipped, legacy = load_history(runs_dir, identity)
