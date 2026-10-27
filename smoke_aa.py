@@ -1,6 +1,7 @@
 """Compare A/A variability for eager Python launches and CUDA Graph replay.
 
 Run from the project root: .venv/bin/python smoke_aa.py
+Use --mode-order graph-first in a separate capture to counterbalance mode order.
 The JSON result includes every paired timing and its execution order.
 """
 
@@ -267,7 +268,7 @@ def comparison_summary(modes):
     python_deviation = metrics["python_launch"]["median_absolute_ratio_deviation"]
     graph_deviation = metrics["cuda_graph"]["median_absolute_ratio_deviation"]
     return {
-        "mode_order": ["python_launch", "cuda_graph"],
+        "mode_order": list(modes),
         "metrics": metrics,
         "graph_minus_python_median_absolute_ratio_deviation": (
             graph_deviation - python_deviation
@@ -290,6 +291,9 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, help="JSON output path; must not exist")
+    parser.add_argument("--mode-order", choices=("python-first", "graph-first"),
+                        default="python-first",
+                        help="Execution order for the two A/A timing modes")
     args = parser.parse_args()
 
     started = datetime.now(timezone.utc)
@@ -305,41 +309,42 @@ def main():
     a = torch.randn((M, K), device="cuda", dtype=torch.float16, generator=generator)
     b = torch.randn((K, N), device="cuda", dtype=torch.float16, generator=generator)
 
+    mode_order = (["python_launch", "cuda_graph"] if args.mode_order == "python-first"
+                  else ["cuda_graph", "python_launch"])
     modes = {}
     with torch.inference_mode():
-        python_timer = DiagnosticTimer()
-        python_result = run_aa_calibration(
-            launch, a, b, BASELINE, rounds=ROUNDS, warmups=WARMUPS,
-            iterations=ITERATIONS, seed=ORDER_SEED, timer=python_timer,
-        )
-        attach_diagnostics(python_result, python_timer.blocks, "python_launch")
-        modes["python_launch"] = {
-            "benchmark": python_result,
-            "diagnostic_summary": diagnostic_summary(python_result),
-        }
+        for mode in mode_order:
+            if mode == "python_launch":
+                timer = DiagnosticTimer()
+                result = run_aa_calibration(
+                    launch, a, b, BASELINE, rounds=ROUNDS, warmups=WARMUPS,
+                    iterations=ITERATIONS, seed=ORDER_SEED, timer=timer,
+                )
+            else:
+                graphs = {}
+                timer = GraphDiagnosticTimer(graphs)
 
-        graphs = {}
-        graph_timer = GraphDiagnosticTimer(graphs)
+                def prepare_graphs(outputs):
+                    graphs.update(capture_graphs(
+                        launch, a, b, BASELINE, outputs, ITERATIONS))
 
-        def prepare_graphs(outputs):
-            graphs.update(capture_graphs(launch, a, b, BASELINE, outputs, ITERATIONS))
-
-        graph_result = run_aa_calibration(
-            launch, a, b, BASELINE, rounds=ROUNDS, warmups=WARMUPS,
-            iterations=ITERATIONS, seed=ORDER_SEED,
-            prepare=prepare_graphs, timer_by_side=graph_timer,
-        )
-        attach_diagnostics(graph_result, graph_timer.blocks, "cuda_graph")
-        graph_result["method"].update({
-            "graph_capture_launches_per_side": ITERATIONS,
-            "untimed_graph_warmup_replays_per_side": 1,
-            "timed_graph_replays_per_block": 1,
-            "per_round_warmups": "20 eager launches per side, as in Python mode",
-        })
-        modes["cuda_graph"] = {
-            "benchmark": graph_result,
-            "diagnostic_summary": diagnostic_summary(graph_result),
-        }
+                result = run_aa_calibration(
+                    launch, a, b, BASELINE, rounds=ROUNDS, warmups=WARMUPS,
+                    iterations=ITERATIONS, seed=ORDER_SEED,
+                    prepare=prepare_graphs, timer_by_side=timer,
+                )
+            attach_diagnostics(result, timer.blocks, mode)
+            if mode == "cuda_graph":
+                result["method"].update({
+                    "graph_capture_launches_per_side": ITERATIONS,
+                    "untimed_graph_warmup_replays_per_side": 1,
+                    "timed_graph_replays_per_block": 1,
+                    "per_round_warmups": "20 eager launches per side, as in Python mode",
+                })
+            modes[mode] = {
+                "benchmark": result,
+                "diagnostic_summary": diagnostic_summary(result),
+            }
 
     comparison = comparison_summary(modes)
 

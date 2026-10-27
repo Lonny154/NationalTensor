@@ -191,6 +191,13 @@ class DiagnosticTimerTests(unittest.TestCase):
         self.assertEqual(summary["observed_graph_aa_deviation"], "lower")
         self.assertEqual(summary["metrics"]["python_launch"]["baseline_cv"], 0.05)
         self.assertEqual(summary["metrics"]["cuda_graph"]["baseline_cv"], 0.01)
+        reversed_summary = comparison_summary({
+            "cuda_graph": capture(1.00, 0.02, 0.01, 4),
+            "python_launch": capture(1.01, 0.07, 0.05, 2),
+        })
+        self.assertEqual(reversed_summary["mode_order"],
+                         ["cuda_graph", "python_launch"])
+        self.assertEqual(reversed_summary["metrics"], summary["metrics"])
 
 
 if __name__ == "__main__":

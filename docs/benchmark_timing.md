@@ -37,9 +37,11 @@ separate modes. `python_launch` times 100 eager Python launches per block.
 output, primes each graph with one untimed replay, then times one replay per
 block. Both modes use the same inputs, configuration, order seed, and 20 eager
 warmup launches per side before each timed block. Compilation, capture,
-priming, and warmups are excluded. The graph mode's extra pre-timing replays
-and the fixed Python-then-graph mode order can affect GPU state; a single run
-does not establish a causal improvement in variability.
+priming, and warmups are excluded. Use `--mode-order python-first` (the default)
+or `--mode-order graph-first` in separate processes to counterbalance the
+sequential capture order; the actual order is saved in `comparison.mode_order`.
+The graph mode's extra pre-timing replays and GPU state can still affect a
+comparison. Two captures do not establish a causal improvement in variability.
 
 For each timed block the JSON saves CUDA-event milliseconds, host submission
 milliseconds measured around either the Python launch loop or `graph.replay()`,
@@ -108,3 +110,46 @@ requires an explicit schedule in each configuration and an exact mode/source
 identity. Numeric history, including older records without schedule identity,
 is never treated as structural evidence. Idle-associated first-block timing
 anomalies remain possible; no settling block or outlier removal is applied.
+
+## Day 2 reliability check (October 27, 2026)
+
+Two independent `smoke_aa.py` processes used opposite mode orders on the
+512×3072×768 FP16 workload (20 balanced A/A rounds per mode, 100 launches per
+block). Raw traces are in
+`evaluations/day2-reliability/aa_python_first_20261027.json` and
+`evaluations/day2-reliability/aa_graph_first_20261027.json`.
+
+| Capture order | Mode | Median absolute paired A/A ratio deviation | A/B block-time CV | All-block range, µs/launch |
+| --- | --- | ---: | ---: | ---: |
+| Python then graph | Python launches | 3.675% | 4.594% / 4.718% | 59.30–71.56 |
+| Python then graph | CUDA Graph replay | 4.517% | 3.805% / 4.081% | 57.73–65.82 |
+| Graph then Python | CUDA Graph replay | 3.886% | 6.426% / 5.379% | 57.78–74.57 |
+| Graph then Python | Python launches | 4.196% | 2.560% / 2.323% | 59.08–66.00 |
+
+Neither mode consistently reduced paired A/A deviation or absolute timing
+variability. Graph replay and eager Python launches have different timing
+boundaries; their absolute latencies must not be compared as kernel speedups.
+The first timed blocks in these captures were below 100 µs per launch, but
+their A/A ratios varied; counterbalancing did not produce a stable mode winner.
+
+The existing `idle_gap_diagnostic.py --settling` factorial was run once, with
+two repetitions per cell and a 10-second host idle gap. Its full trace is
+`evaluations/day2-reliability/idle_settling_20261027.json`. Without the extra
+preparation block, both idle captures had a first timed block above 100 µs
+(811 and 851 µs). With one fixed, excluded 100-launch preparation block per
+side, preparation itself exceeded 100 µs in both idle captures (first blocks
+781 and 988 µs), yet one first timed block was still 419 µs. Immediate
+captures had no first timed block above 100 µs. The initial ten warmup
+launches per side, ten before every timed block, and fixed preparation blocks
+therefore did not reliably prevent the idle anomaly. The enclosing A/A checks
+had median absolute paired-ratio deviations of 2.753% before and 1.069% after.
+No block was removed or corrected.
+
+Keep the existing paired eager Python-launch CUDA-event method for subsequent
+optimizer artifacts because it is the integrated, labeled protocol and the
+diagnostics do not justify a switch to graphs. Recheck small candidate effects
+with independent A/A and candidate captures; treat effects comparable to the
+observed several-percent A/A deviation as unresolved. This check does not
+establish a universal noise floor or make sub-percent structural speedups
+reliable to adjudicate. The confirmation rule remains a heuristic, not a
+statistical significance test.
