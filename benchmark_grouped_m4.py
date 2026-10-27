@@ -17,6 +17,7 @@ import torch
 import triton
 
 import benchmark_core
+import reference_precision
 from benchmark_proposal import launch as launch_direct, matmul_kernel
 from grouped_matmul import (
     DIRECT_2D, GROUPED_M4, GROUP_M, grouped_matmul_kernel,
@@ -28,12 +29,15 @@ from optimize import (
     SCREEN_ITERATIONS, SCREEN_WARMUPS, benchmark_method,
     confirmation_decision,
 )
+from reference_precision import fp16_mm_reference
 
 
 SHAPES = ((512, 3072, 768), (384, 3072, 768))  # M, N, K
 INPUT_SEED = 42
-INPUT_SCALE = 0.5
+INPUT_SCALE = 1.0
 SCREEN_ROUNDS = 8
+CORRECTNESS_RTOL = 0.02
+CORRECTNESS_ATOL = 0.02
 
 
 def sha256_source(function):
@@ -49,6 +53,9 @@ def source_fingerprints():
         "schedule_dispatcher": sha256_source(launch_scheduled),
         "benchmark_core_file": hashlib.sha256(
             Path(benchmark_core.__file__).read_bytes()
+        ).hexdigest(),
+        "reference_precision_file": hashlib.sha256(
+            Path(reference_precision.__file__).read_bytes()
         ).hexdigest(),
     }
 
@@ -77,7 +84,9 @@ def validate(a, b, reference, config):
     output = torch.empty_like(reference)
     launch_scheduled(a, b, output, config)
     torch.cuda.synchronize()
-    torch.testing.assert_close(output, reference, rtol=0.02, atol=0.02)
+    torch.testing.assert_close(
+        output, reference, rtol=CORRECTNESS_RTOL, atol=CORRECTNESS_ATOL
+    )
     return output
 
 
@@ -95,9 +104,9 @@ def print_rounds(raw, label):
 def run_shape(shape, shape_index, direct, grouped):
     m, n, k = shape
     torch.manual_seed(INPUT_SEED + shape_index)
-    a = torch.randn((m, k), device="cuda", dtype=torch.float16) * INPUT_SCALE
-    b = torch.randn((k, n), device="cuda", dtype=torch.float16) * INPUT_SCALE
-    reference = torch.mm(a, b)
+    a = torch.randn((m, k), device="cuda", dtype=torch.float16)
+    b = torch.randn((k, n), device="cuda", dtype=torch.float16)
+    reference, reference_policy = fp16_mm_reference(a, b)
 
     # Both launchers compile and both outputs pass the same numerical check
     # before either schedule enters a measured block.
@@ -108,6 +117,7 @@ def run_shape(shape, shape_index, direct, grouped):
         "shape_mnk": list(shape),
         "input_seed": INPUT_SEED + shape_index,
         "input_scale": INPUT_SCALE,
+        "reference_precision": reference_policy,
         "correctness": {DIRECT_2D: "PASS", GROUPED_M4: "PASS"},
     }
     print(f"M={m}, N={n}, K={k}: both schedules pass correctness")
@@ -188,6 +198,8 @@ def main():
         "configurations": {DIRECT_2D: direct, GROUPED_M4: grouped},
         "input_generation": {"distribution": "torch.randn", "seed": INPUT_SEED,
                              "seed_increments_per_shape": 1, "scale": INPUT_SCALE},
+        "correctness_tolerance": {"rtol": CORRECTNESS_RTOL, "atol": CORRECTNESS_ATOL},
+        "reference_precision_policy": "fp16_torch_mm_without_reduced_precision_reduction",
         "group_size_m": GROUP_M,
         "method": benchmark_method(
             SCREEN_ROUNDS, DEFAULT_CONFIRMATION_PAIRS,
