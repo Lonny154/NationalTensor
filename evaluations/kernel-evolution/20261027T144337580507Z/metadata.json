@@ -1,0 +1,50 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T14:43:37.581366+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "candidate_sha256": "c9f81c34d23919359ca67ea2a071ed13a176203e783e6acccca77d702841b3ad",
+  "hypothesis": "Intra-kernel GROUP_M=4 L2 swizzle with fixed 64x128x32 tiles will outperform direct 2D pid ordering on 512x3072x768 FP16 without changing math.",
+  "expected_mechanism": "Remapping linear pid into groups of 4 M-tiles x all N-tiles keeps CTAs that reuse the same A block close in launch order, improving L2 hit rate and reducing DRAM traffic for the large-N dimension. Math, masks, FP32 accumulation, single launch, and tile sizes are unchanged; only execution order changes, so boundary correctness is preserved.",
+  "reasoning_from_feedback": "Prior structural screening showed grouped_m4 promising_unconfirmed at ~1.005x while split_k factor 2 hurt at ~0.836x, so this proposal internalizes GROUP_M=4 ordering inside the kernel to keep the fixed launcher and single launch while avoiding K-parallel reduction. Previous rejection was AnnAssign syntax, so this version uses only plain assignments and standard tl ops with identical baseline signature.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "range",
+      "tl.arange",
+      "tl.cdiv",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.minimum",
+      "tl.program_id",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "c9f81c34d23919359ca67ea2a071ed13a176203e783e6acccca77d702841b3ad"
+  }
+}

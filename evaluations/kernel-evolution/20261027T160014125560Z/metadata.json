@@ -1,0 +1,55 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T16:00:14.126001+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "review_from": "evaluations/kernel-evolution/20261027T150316362990Z",
+  "trusted_feedback_path": "evaluations/trusted-compute/20261027T154233319712Z/feedback.json",
+  "trusted_feedback_sha256": "96f0c8a1bc8057ec356fa1e877f7167bc200b1744caad4399c084b3e874302c8",
+  "trusted_experiment_sha256": "b74748500998f5ce0a0caa61fba6c7c458c6dba5e796d22931d453f5ad4deaae",
+  "trusted_feedback_provenance": "model_suggested_human_reviewed_implementation",
+  "trusted_implementation_sha256": "951ec924a4cfa6fb9abd4f9a7d12fbb3e187e56a69b77b8df546cf89b15e63f2",
+  "candidate_sha256": "22ce595f5eb134442dd186de8a3db1b25c9413391daa230dd9e9f87781da43fc",
+  "hypothesis": "Two-slab K-loop unrolling with paired tl.load A/B and back-to-back tl.dot per iteration will outperform the baseline single-slab K-loop by halving loop trips and overlapping two global to shared movements with two FP32 tl.dot accumulations while using larger-stride a_ptrs += 2*BK and b_ptrs += 2*BK*N pointer advances.",
+  "expected_mechanism": "Each iteration computes k0 = p*2*BK once, issues tl.load a0/b0 with k0 masks, tl.dot a0*b0 into acc, then tl.load a1 from a_ptrs+BK and b1 from b_ptrs+BK*N with k0+BK masks and second tl.dot a1*b1 into the same FP32 acc, then advances a_ptrs by 2*BK and b_ptrs by 2*BK*N. This halves loop-branch and pointer-update overhead, keeps two BK tiles in flight per loop, gives the pipeliner a larger straight-line load-dot-dot sequence to overlap cp.async movement with mma computation, and leaves a single-slab tail tl.load plus tl.dot for odd tl.cdiv(K,BK). No tile, FP16 I/O, FP32 accumulation, or launcher change.",
+  "reasoning_from_feedback": "This differs from the prior unevaluated Muse candidate 38b23fad21dc8bb6d194239c7ac0d0a20b1c8566de4055442e3e927d8f97e59a which only hoisted m_mask/n_mask, used one k_off expression, and added tl.range(num_stages=3), and from the human-reviewed trusted implementation 951ec924a4cfa6fb9abd4f9a7d12fbb3e187e56a69b77b8df546cf89b15e63f2 which tested that same mask-hoisting idea. Those sources are distinct; the exact Muse source was not compiled, checked, or timed, so no correctness or speedup claim transfers to this new source. It also keeps baseline program-id mapping and is not grouped_m4 program-id swizzle nor split-K parallelism. The trusted test passed correctness on 512x3072x768, 509x3071x769, 65x129x33 for seeds 42/43 under FP16 torch.mm policy, but that pass applies only to the trusted source. Its median paired screening 1.00239x is ambiguous, not a confirmed gain, especially with A/A median absolute deviation 3.84% and max 10.56% showing screening noise. Compiler evidence showed trusted TTIR only added tt.num_stages=3 while TTGIR kept six async-copies, PTX multisets matched with 18 cp.async, 6 commits, 2 waits, 32 mma.sync, 12 ldmatrix, and resources matched at 120 registers, 0 spills, 24576 bytes shared, which is evidence against a substantive change from mask-hoisting alone. This proposal should survive compilation differently: doubling tl.load/tl.dot per iteration should change TTGIR async-copy count per loop iteration, double cp.async and mma.sync/ldmatrix per iteration in PTX, halve trip count, extend live ranges for a1/b1 and chained acc, and alter shared-memory staging and register pressure, which the compiler cannot fold back to baseline because the two tl.dot operations have an ordered acc dependency with distinct K-mask predicates and distinct pointer offsets.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "range",
+      "tl.arange",
+      "tl.cdiv",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.program_id",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "22ce595f5eb134442dd186de8a3db1b25c9413391daa230dd9e9f87781da43fc"
+  }
+}

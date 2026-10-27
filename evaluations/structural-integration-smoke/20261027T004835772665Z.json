@@ -1,0 +1,250 @@
+{
+  "mode": "structural_integration_smoke",
+  "source_sha256": {
+    "direct_kernel_and_launcher": "f99c4aa0c87b37a6286cd2f2b755e395d9d4956399493cc61b53c6b17e521d53",
+    "grouped_kernel_and_launcher": "bdee1a1bb879d867dee51d0a8376064cbcf9d3bf12715a70c201620468a20a2b",
+    "schedule_dispatcher": "7d6ecbf23cb7c91b2b600993b7b18d466fe0cf0573190615183b6da2a58f18c7",
+    "benchmark_core_file": "8a3d69a7fac12503b70b74cb56ed1e7dc98664c9b8ce7e1ea1e376d03629c1b9",
+    "reference_precision_file": "3a48de29fa4ad478bc71c31cec6889ce112b359a6081bef8031c2ba91bb7f73c",
+    "structural_correctness": "76365ec267ed96d8cbc6cd90cd13ec4dc86c81afe9fbc4bb3391f11ca9cd3245",
+    "structural_paired_adapter": "55c8688271227333f16bef3c75bf89efc5d2fd498c54708682a1c2f66d541438",
+    "confirmation_rule": "a9d697a19e52e9b11a7d344cb60bc7b24e2da62050b93616630ffe6d8703dcb0"
+  },
+  "shapes": [
+    {
+      "shape_mnk": [
+        512,
+        3072,
+        768
+      ],
+      "seed": 42,
+      "direct_correctness": "PASS",
+      "grouped_correctness": "PASS",
+      "exact_equal": true,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "screening": {
+        "benchmark_schema_version": 2,
+        "measurement_mode": "python_launch_cuda_event",
+        "baseline_ms": 0.06774207830429077,
+        "candidate_ms": 0.06871551990509034,
+        "speedup": 0.9858337446599533,
+        "median_paired_speedup": 0.9869109703338914,
+        "samples_ms": {
+          "baseline": [
+            0.0678489589691162,
+            0.0712998390197754,
+            0.06763519763946534,
+            0.07082687854766846,
+            0.06403071880340576,
+            0.06420479774475098,
+            0.07874559879302978,
+            0.06753280162811279
+          ],
+          "candidate": [
+            0.07150591850280762,
+            0.06768640041351319,
+            0.07685120105743408,
+            0.06974463939666747,
+            0.06672128200531006,
+            0.07608191967010498,
+            0.06469632148742675,
+            0.06659071922302245
+          ]
+        },
+        "paired_rounds": [
+          {
+            "round": 1,
+            "order": [
+              "candidate",
+              "baseline"
+            ],
+            "candidate_ms": 0.07150591850280762,
+            "baseline_ms": 0.0678489589691162,
+            "baseline_over_candidate": 0.9488579461636056
+          },
+          {
+            "round": 2,
+            "order": [
+              "baseline",
+              "candidate"
+            ],
+            "baseline_ms": 0.0712998390197754,
+            "candidate_ms": 0.06768640041351319,
+            "baseline_over_candidate": 1.0533850017756419
+          },
+          {
+            "round": 3,
+            "order": [
+              "baseline",
+              "candidate"
+            ],
+            "baseline_ms": 0.06763519763946534,
+            "candidate_ms": 0.07685120105743408,
+            "baseline_over_candidate": 0.8800799038770878
+          },
+          {
+            "round": 4,
+            "order": [
+              "candidate",
+              "baseline"
+            ],
+            "candidate_ms": 0.06974463939666747,
+            "baseline_ms": 0.07082687854766846,
+            "baseline_over_candidate": 1.0155171660555278
+          },
+          {
+            "round": 5,
+            "order": [
+              "candidate",
+              "baseline"
+            ],
+            "candidate_ms": 0.06672128200531006,
+            "baseline_ms": 0.06403071880340576,
+            "baseline_over_candidate": 0.959674587762115
+          },
+          {
+            "round": 6,
+            "order": [
+              "baseline",
+              "candidate"
+            ],
+            "baseline_ms": 0.06420479774475098,
+            "candidate_ms": 0.07608191967010498,
+            "baseline_over_candidate": 0.8438903490230819
+          },
+          {
+            "round": 7,
+            "order": [
+              "baseline",
+              "candidate"
+            ],
+            "baseline_ms": 0.07874559879302978,
+            "candidate_ms": 0.06469632148742675,
+            "baseline_over_candidate": 1.2171572816289624
+          },
+          {
+            "round": 8,
+            "order": [
+              "candidate",
+              "baseline"
+            ],
+            "candidate_ms": 0.06659071922302245,
+            "baseline_ms": 0.06753280162811279,
+            "baseline_over_candidate": 1.0141473529056677
+          }
+        ],
+        "statistics": {
+          "baseline_ms": {
+            "count": 8,
+            "median": 0.06774207830429077,
+            "mean": 0.06901559889316558,
+            "min": 0.06403071880340576,
+            "max": 0.07874559879302978,
+            "p25": 0.06670080065727234,
+            "p75": 0.0709451186656952,
+            "mad": 0.0033110404014587425,
+            "stdev": 0.0044247805913953265,
+            "cv": 0.0641127609172062
+          },
+          "candidate_ms": {
+            "count": 8,
+            "median": 0.06871551990509034,
+            "mean": 0.06998480021953582,
+            "min": 0.06469632148742675,
+            "max": 0.07685120105743408,
+            "p25": 0.06668864130973816,
+            "p75": 0.07264991879463195,
+            "mad": 0.002457599639892581,
+            "stdev": 0.004214777426322689,
+            "cv": 0.06022418315264634
+          },
+          "paired_ratios": {
+            "count": 8,
+            "median": 0.9869109703338914,
+            "mean": 0.9915886986489613,
+            "min": 0.8438903490230819,
+            "max": 1.2171572816289624,
+            "p25": 0.9316634355919762,
+            "p75": 1.0249841249855562,
+            "mad": 0.05226352780601812,
+            "stdev": 0.10774673696763278,
+            "cv": 0.10866071498640274
+          }
+        },
+        "method": {
+          "clock": "cuda_event",
+          "timing_boundary": "CUDA-event block divided by launch count",
+          "preallocated_outputs": true,
+          "prime_calls_per_side": 1,
+          "initial_warmups_per_side": 10,
+          "warmups_per_side_per_round": 10,
+          "iterations_per_side_per_round": 100,
+          "rounds": 8,
+          "order_seed": 43,
+          "balanced_order": true,
+          "measurement_mode": "python_launch"
+        },
+        "baseline_schedule": "direct_2d",
+        "candidate_schedule": "grouped_m4"
+      }
+    },
+    {
+      "shape_mnk": [
+        384,
+        3072,
+        768
+      ],
+      "seed": 43,
+      "direct_correctness": "PASS",
+      "grouped_correctness": "PASS",
+      "exact_equal": true,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      }
+    }
+  ]
+}

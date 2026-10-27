@@ -1,0 +1,31 @@
+{
+  "report_type": "trusted_implementation_feedback",
+  "provenance": "model_suggested_human_reviewed_implementation",
+  "exact_generated_source_evaluated": false,
+  "original_muse_candidate_sha256": "38b23fad21dc8bb6d194239c7ac0d0a20b1c8566de4055442e3e927d8f97e59a",
+  "trusted_implementation_sha256": "951ec924a4cfa6fb9abd4f9a7d12fbb3e187e56a69b77b8df546cf89b15e63f2",
+  "experiment_artifact": "experiment.json",
+  "workload_mnk": [512, 3072, 768],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "correctness": "PASS on 512x3072x768, 509x3071x769, and 65x129x33 for seeds 42 and 43 under the scoped FP16 torch.mm policy",
+  "measurement_method": "paired Python-launch CUDA events; 8 screening rounds, 10 warmups and 100 launches per block",
+  "screening": {
+    "baseline_median_ms": 0.0613369607925415,
+    "trusted_median_ms": 0.06118911981582642,
+    "median_paired_speedup": 1.0023913255893322,
+    "paired_ratio_mad": 0.04185694284419611,
+    "interpretation": "A 0.24% screening ratio is ambiguous and is not a confirmed improvement."
+  },
+  "aa_calibration": {
+    "rounds": 20,
+    "median_absolute_ratio_deviation": 0.038414083020193,
+    "max_absolute_ratio_deviation": 0.1056103664524195
+  },
+  "compiler_review": {
+    "ttir": "The trusted loop carries tt.num_stages = 3; the baseline loop does not.",
+    "ttgir": "Both versions have six async-copy operations in the saved IR and the same pipelined loop structure.",
+    "ptx": "The non-debug PTX line multisets match. Two setp.lt predicate instructions appear earlier in the trusted version; both have 18 cp.async global copies, 6 commits, 2 waits, 32 mma.sync and 12 ldmatrix instructions.",
+    "resources": "Both use 120 registers per thread, 0 spills, and 24576 bytes shared memory."
+  },
+  "feedback_for_next_proposal": "The human-authored variant of mask hoisting, one K-offset expression, and explicit tl.range staging passed correctness but did not demonstrate a performance gain. The baseline already emits cp.async and nearly identical PTX. A subsequent proposal should target a change that survives compilation; this result is not an evaluation of the exact Muse source."
+}

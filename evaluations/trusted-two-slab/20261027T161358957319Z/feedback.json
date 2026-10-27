@@ -1,0 +1,58 @@
+{
+  "report_type": "trusted_implementation_feedback",
+  "provenance": "model_suggested_human_reviewed_implementation",
+  "exact_generated_source_evaluated": false,
+  "original_muse_candidate_sha256": "22ce595f5eb134442dd186de8a3db1b25c9413391daa230dd9e9f87781da43fc",
+  "trusted_implementation_sha256": "5091c2df5c27ede3cce7b0472a157b8787e86c8714f0d384b5cd587babc9f5d0",
+  "check_artifact": "check.json",
+  "screening_artifact": "screening.json",
+  "ptx_comparison_artifact": "ptx-compare/comparison.json",
+  "sass_comparison_artifact": "sass-compare/comparison.json",
+  "dynamic_profile_artifact": "dynamic-ncu.csv",
+  "workload_mnk": [512, 3072, 768],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "correctness": "PASS on three shapes and seeds 42 and 43 for the independently written trusted kernel only",
+  "screening": {
+    "baseline_median_ms": 0.059483840465545654,
+    "trusted_median_ms": 0.06295984029769897,
+    "median_paired_speedup": 0.9473613339471774,
+    "paired_ratio_mad": 0.01588739344543344,
+    "all_eight_pairs_favor_baseline": true,
+    "interpretation": "Screening suggests a slowdown; no speedup was confirmed, and timing noise remains unresolved."
+  },
+  "aa_calibration": {
+    "median_absolute_ratio_deviation": 0.04851305314242971,
+    "max_absolute_ratio_deviation": 0.10840006407750513
+  },
+  "compiler_review": {
+    "ttir": "Baseline has 24 loop trips with one dot per trip; trusted two-slab has 12 trips with two ordered dots per trip.",
+    "ttgir": "The trusted loop carries 13 values versus 9 and uses more operand staging; this does not establish better overlap.",
+    "ptx": "Matmul Inspector reports 397 versus 498 static instructions, 18 versus 36 cp.async copies, and 32 versus 64 mma.sync sites per compiled body.",
+    "sass": "Matmul Inspector reports 432 versus 496 static instructions and 32 versus 64 HMMA sites per compiled body.",
+    "resources": "Baseline versus trusted: 120 versus 129 registers per thread, zero spills in both, 24576 versus 49152 bytes shared memory."
+  },
+  "dynamic_profile": {
+    "baseline": {
+      "sm__sass_inst_executed.sum": 2191872,
+      "sm__sass_inst_executed_op_branch.sum": 18432,
+      "sm__inst_executed_pipe_tensor_v2.sum": 589824
+    },
+    "trusted": {
+      "sm__sass_inst_executed.sum": 1696512,
+      "sm__sass_inst_executed_op_branch.sum": 9216,
+      "sm__inst_executed_pipe_tensor_v2.sum": 589824
+    },
+    "method": "One profiled FC1 launch per implementation with zero-valued FP16 inputs; separate from paired timing."
+  },
+  "research_question": "Can a different K-loop or operand-scheduling strategy reduce loop overhead without increasing registers or shared-memory allocation relative to the baseline?",
+  "measured_observations": [
+    "Trusted correctness passed all six shape-seed cases; exact Muse source was not evaluated.",
+    "Dynamic SASS instructions fell by about 22.6%, branch instructions by 50%, and tensor-pipe instructions were unchanged.",
+    "Registers rose 120 to 129 per thread and shared memory rose 24576 to 49152 bytes; neither kernel spilled.",
+    "Median paired screening speedup was 0.94736x; all eight pairs favored baseline. A/A median absolute ratio deviation was 4.85%. No speedup was confirmed."
+  ],
+  "speculative_explanations": [
+    "The higher register and shared-memory requirements could reduce occupancy or scheduling flexibility; occupancy and causality were not measured."
+  ],
+  "feedback_for_next_proposal": "The trusted two-slab implementation reduced dynamic loop-related instructions yet screened slower while using more registers and twice the shared memory. Propose a substantially different compute mechanism that could retain lower loop overhead or improve operand scheduling without that resource increase. Explain the expected generated-instruction and resource changes, and label unmeasured occupancy explanations as hypotheses. This is not an evaluation of the exact Muse-generated source."
+}

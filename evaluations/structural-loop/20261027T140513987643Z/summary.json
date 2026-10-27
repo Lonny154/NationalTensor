@@ -1,0 +1,9 @@
+{
+  "status": "complete",
+  "experiments_attempted": 2,
+  "confirmed_winner": null,
+  "confirmation": "separate process required",
+  "best_screening_experiment": null,
+  "best_screening_speedup": null,
+  "interpretation": "Screening only; no confirmed winner"
+}

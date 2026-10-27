@@ -1,0 +1,9 @@
+==PROF== Connected to process 42164 (/home/daniel/miniconda3/bin/python3.13)
+==PROF== Disconnected from process 42164
+"ID","Process ID","Process Name","Host Name","Kernel Name","Context","Stream","Block Size","Grid Size","Device","CC","Section Name","Metric Name","Metric Unit","Metric Value"
+"0","42164","python3.13","127.0.0.1","matmul_kernel","1","7","(128, 1, 1)","(8, 24, 1)","0","8.9","Command line profiler metrics","sm__inst_executed_pipe_tensor_v2.sum","inst","589824"
+"0","42164","python3.13","127.0.0.1","matmul_kernel","1","7","(128, 1, 1)","(8, 24, 1)","0","8.9","Command line profiler metrics","sm__sass_inst_executed.sum","inst","2191872"
+"0","42164","python3.13","127.0.0.1","matmul_kernel","1","7","(128, 1, 1)","(8, 24, 1)","0","8.9","Command line profiler metrics","sm__sass_inst_executed_op_branch.sum","inst","18432"
+"1","42164","python3.13","127.0.0.1","matmul_kernel","1","7","(128, 1, 1)","(8, 24, 1)","0","8.9","Command line profiler metrics","sm__inst_executed_pipe_tensor_v2.sum","inst","589824"
+"1","42164","python3.13","127.0.0.1","matmul_kernel","1","7","(128, 1, 1)","(8, 24, 1)","0","8.9","Command line profiler metrics","sm__sass_inst_executed.sum","inst","1696512"
+"1","42164","python3.13","127.0.0.1","matmul_kernel","1","7","(128, 1, 1)","(8, 24, 1)","0","8.9","Command line profiler metrics","sm__sass_inst_executed_op_branch.sum","inst","9216"

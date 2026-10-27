@@ -1,0 +1,50 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T15:03:16.363583+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "review_from": "evaluations/kernel-evolution/20261027T144337580507Z",
+  "candidate_sha256": "38b23fad21dc8bb6d194239c7ac0d0a20b1c8566de4055442e3e927d8f97e59a",
+  "hypothesis": "Hoisted m_mask/n_mask with single k_off and explicit tl.range num_stages=3 pipelining will outperform the baseline K-loop by reducing per-iteration mask arithmetic for tl.load A/B and improving overlap of tl.load A/B pointer increments with tl.dot accumulation on 512x3072x768 FP16 with 64x128x32 tiles.",
+  "expected_mechanism": "Compute m_mask and n_mask once outside the loop and reuse them in tl.load A mask, tl.load B mask, and final tl.store mask instead of rebuilding m<M and n<N each iteration. Compute k_off = offset*BK once per iteration instead of two offset*BK expressions in A and B K-predicates. Hoist loop_k = tl.cdiv(K, BK) and iterate with tl.range(0, loop_k, num_stages=3) to give the software pipeliner an explicit depth matching the launcher to overlap cp.async tl.load from a_ptrs/b_ptrs with tl.dot FP32 accumulation, while a_ptrs += BK and b_ptrs += BK*N pointer advances preserve coalescing. No math, tile, FP16 I/O, or launch change.",
+  "reasoning_from_feedback": "This differs from both prior generated attempts and reviewed structural kernels and claims no measured feedback for unevaluated code. The prior unevaluated GROUP_M=4 candidate and rejected GROUP_M=8 candidate changed only program-ID remapping and, for the rejected one, EVEN mask elimination with AnnAssign syntax; this proposal keeps baseline direct 2D pid_m/pid_n mapping with no GROUP_M swizzle and uses only plain assignments. It differs from reviewed structural grouped_m4 CTA ordering and split_k K-parallel reduction by leaving grid, single launch, and reduction structure unchanged and instead reorganizing inner K-loop computation, mask reuse, pointer predicate formation, and tl.load/tl.dot pipeline depth. The prior candidate status is not compiled, checked for correctness, or timed, so no speedup or correctness is inferred from it.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "tl.arange",
+      "tl.cdiv",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.program_id",
+      "tl.range",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "38b23fad21dc8bb6d194239c7ac0d0a20b1c8566de4055442e3e927d8f97e59a"
+  }
+}

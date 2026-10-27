@@ -1,0 +1,94 @@
+{
+  "search_mode": "autonomous_structural_v1",
+  "shape_mnk": [
+    128,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "dtype": "fp16",
+  "input_seed": 42,
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "baseline": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3,
+    "schedule": "direct_2d"
+  },
+  "strategies": {
+    "direct_2d": {},
+    "grouped_m4": {},
+    "split_k": {
+      "split_factor": [
+        2,
+        4
+      ]
+    }
+  },
+  "source_sha256": {
+    "direct": "f99c4aa0c87b37a6286cd2f2b755e395d9d4956399493cc61b53c6b17e521d53",
+    "grouped": "5ef7274825d393119eafcde8e41fae30f66903f574a9c3cadf2f4ab16ff83f59",
+    "split_k": "23fbe5674be7fcd0c823f56f1e934ab7d34eb38793f6f5c6a5ac5290ee5ffc8a",
+    "loop_dispatch": "c5fa024168bc8281f332d90957dcc622f8bc681179d525ab3fc7a17c12f5d15a",
+    "loop_policy": "9f1da5588f8201529b15878562b2f70c03b0705ab8ef0ba70de6b65af378fbb0",
+    "benchmark_core_file": "8a3d69a7fac12503b70b74cb56ed1e7dc98664c9b8ce7e1ea1e376d03629c1b9",
+    "reference_precision_file": "3a48de29fa4ad478bc71c31cec6889ce112b359a6081bef8031c2ba91bb7f73c",
+    "confirmation_rule": "a9d697a19e52e9b11a7d344cb60bc7b24e2da62050b93616630ffe6d8703dcb0"
+  },
+  "measurement_method": {
+    "schema_version": 2,
+    "measurement_mode": "python_launch_cuda_event",
+    "timing_boundary": "CUDA-event block divided by launch count",
+    "screening": {
+      "rounds": 8,
+      "warmups": 10,
+      "iterations_per_block": 100
+    },
+    "confirmation": {
+      "verification_pairs": 7,
+      "rounds": 14,
+      "warmups": 10,
+      "iterations_per_block": 200,
+      "all_pairs_favor_candidate": true,
+      "minimum_median_pair_speedup": 1.02,
+      "rule_type": "heuristic; not a statistical significance test"
+    }
+  },
+  "reference_precision_policy": "fp16_torch_mm_without_reduced_precision_reduction",
+  "created_utc": "2026-10-27T13:54:35.023863+00:00",
+  "model": "muse-spark-1.3",
+  "requested_experiments": 2,
+  "compatible_prior_records": 0,
+  "reference_precision": {
+    "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+    "operation": "torch.mm on original FP16 inputs",
+    "split_k_setting_supported": true,
+    "fp16_accumulation_setting_supported": true,
+    "settings_before": {
+      "allow_fp16_reduced_precision_reduction": true,
+      "allow_fp16_reduced_precision_reduction_split_k": true,
+      "allow_fp16_accumulation": false,
+      "allow_tf32": false
+    },
+    "settings_during": {
+      "allow_fp16_reduced_precision_reduction": false,
+      "allow_fp16_reduced_precision_reduction_split_k": true,
+      "allow_fp16_accumulation": false,
+      "allow_tf32": false
+    },
+    "settings_after": {
+      "allow_fp16_reduced_precision_reduction": true,
+      "allow_fp16_reduced_precision_reduction_split_k": true,
+      "allow_fp16_accumulation": false,
+      "allow_tf32": false
+    }
+  }
+}

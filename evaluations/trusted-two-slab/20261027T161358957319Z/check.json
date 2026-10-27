@@ -1,0 +1,330 @@
+{
+  "provenance": "model_suggested_human_reviewed_implementation",
+  "exact_generated_source_evaluated": false,
+  "original_muse_candidate_sha256": "22ce595f5eb134442dd186de8a3db1b25c9413391daa230dd9e9f87781da43fc",
+  "original_muse_candidate_path": "evaluations/kernel-evolution/20261027T160014125560Z/candidate.py",
+  "trusted_implementation_sha256": "5091c2df5c27ede3cce7b0472a157b8787e86c8714f0d384b5cd587babc9f5d0",
+  "trusted_module_sha256": "98188d25c726c2301cd81e36e6dfd22f02db5f3acbc3d05d385d63ce7cffd06d",
+  "baseline_kernel_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "baseline_launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "correctness_shapes_mnk": [
+    [
+      512,
+      3072,
+      768
+    ],
+    [
+      509,
+      3071,
+      769
+    ],
+    [
+      65,
+      129,
+      33
+    ]
+  ],
+  "correctness_seeds": [
+    42,
+    43
+  ],
+  "measurement_method": {
+    "schema_version": 2,
+    "measurement_mode": "python_launch_cuda_event",
+    "timing_boundary": "CUDA-event block divided by launch count",
+    "screening": {
+      "rounds": 8,
+      "warmups": 10,
+      "iterations_per_block": 100
+    },
+    "confirmation": {
+      "verification_pairs": 7,
+      "rounds": 14,
+      "warmups": 10,
+      "iterations_per_block": 200,
+      "all_pairs_favor_candidate": true,
+      "minimum_median_pair_speedup": 1.02,
+      "rule_type": "heuristic; not a statistical significance test"
+    }
+  },
+  "created_utc": "2026-10-27T16:13:58.958269+00:00",
+  "status": "correctness_and_compiler_captured",
+  "correctness": [
+    {
+      "shape_mnk": [
+        512,
+        3072,
+        768
+      ],
+      "input_seed": 42,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "shape_mnk": [
+        512,
+        3072,
+        768
+      ],
+      "input_seed": 43,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "shape_mnk": [
+        509,
+        3071,
+        769
+      ],
+      "input_seed": 42,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "shape_mnk": [
+        509,
+        3071,
+        769
+      ],
+      "input_seed": 43,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "shape_mnk": [
+        65,
+        129,
+        33
+      ],
+      "input_seed": 42,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "status": "PASS"
+    },
+    {
+      "shape_mnk": [
+        65,
+        129,
+        33
+      ],
+      "input_seed": 43,
+      "reference_precision": {
+        "policy": "fp16_torch_mm_without_reduced_precision_reduction",
+        "operation": "torch.mm on original FP16 inputs",
+        "split_k_setting_supported": true,
+        "fp16_accumulation_setting_supported": true,
+        "settings_before": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_during": {
+          "allow_fp16_reduced_precision_reduction": false,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        },
+        "settings_after": {
+          "allow_fp16_reduced_precision_reduction": true,
+          "allow_fp16_reduced_precision_reduction_split_k": true,
+          "allow_fp16_accumulation": false,
+          "allow_tf32": false
+        }
+      },
+      "status": "PASS"
+    }
+  ],
+  "compilation": {
+    "baseline": "PASS",
+    "trusted": "PASS"
+  },
+  "compiler": {
+    "baseline": {
+      "artifacts": {
+        "ttir": {
+          "path": "baseline.ttir",
+          "sha256": "3d033ded6f9ddc82dbe794ca75e97bcf811695e8eb363c2e4caf626507b13107",
+          "size_bytes": 11934
+        },
+        "ttgir": {
+          "path": "baseline.ttgir",
+          "sha256": "4ab75dfa8da5c9354170411499fe3fbd6beb8b813a088764ea87f429e9d79db0",
+          "size_bytes": 20983
+        },
+        "llir": {
+          "path": "baseline.llir",
+          "sha256": "2279caa53baf0af30784489fe4835e01902e3999b3cc52f2db5ebc4ac1492cac",
+          "size_bytes": 64254
+        },
+        "ptx": {
+          "path": "baseline.ptx",
+          "sha256": "2c5cfb92c337788fe08dbef971490df43f5f07cd02a9212a70fc5be4f44e829b",
+          "size_bytes": 26497
+        },
+        "cubin": {
+          "path": "baseline.cubin",
+          "sha256": "5ccb90d53fe84ed303b6dd6df0ac0b4d782c95013ceb7a33325c144389207a7f",
+          "size_bytes": 31072
+        }
+      },
+      "registers_per_thread": 120,
+      "spills": 0,
+      "shared_memory_bytes": 24576
+    },
+    "trusted": {
+      "artifacts": {
+        "ttir": {
+          "path": "trusted.ttir",
+          "sha256": "da34e46849480937bf018b590f05a2d18184f978684481b9372eec8901339152",
+          "size_bytes": 15459
+        },
+        "ttgir": {
+          "path": "trusted.ttgir",
+          "sha256": "2dc0363b7575c2435e825c1b2a6ad10ef887bb6a4285696d5f07f24511a637d6",
+          "size_bytes": 31440
+        },
+        "llir": {
+          "path": "trusted.llir",
+          "sha256": "b5465824180cc9d55e3c318020d314e8e79840bbe90c134b8aaadbca84ab7f0e",
+          "size_bytes": 98160
+        },
+        "ptx": {
+          "path": "trusted.ptx",
+          "sha256": "e84dc08a3ca990588e639c6887837c3d1e28319876764d9f6db8e8237ff76ce0",
+          "size_bytes": 38750
+        },
+        "cubin": {
+          "path": "trusted.cubin",
+          "sha256": "36d4f43536ba9f0545995c56711d5d6f39d4e2d424af5ee1b5760f642089c6a5",
+          "size_bytes": 41312
+        }
+      },
+      "registers_per_thread": 129,
+      "spills": 0,
+      "shared_memory_bytes": 49152
+    }
+  }
+}

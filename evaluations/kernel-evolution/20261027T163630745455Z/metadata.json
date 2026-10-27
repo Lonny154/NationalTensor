@@ -1,0 +1,54 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T16:36:30.746794+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "review_from": "evaluations/kernel-evolution/20261027T160014125560Z",
+  "trusted_feedback_path": "evaluations/trusted-two-slab/20261027T161358957319Z/feedback.json",
+  "trusted_feedback_sha256": "78fd1974d76cd8310189256653cc984d6d37b0e7abac2c898ccf52958b3a5e7e",
+  "trusted_experiment_sha256": "7475d2479aff832788b96c30de0c52c978196b31430d1e4bfabfe47b67bfa2ee",
+  "trusted_feedback_provenance": "model_suggested_human_reviewed_implementation",
+  "trusted_implementation_sha256": "5091c2df5c27ede3cce7b0472a157b8787e86c8714f0d384b5cd587babc9f5d0",
+  "candidate_sha256": "0dadc8e70d770e88347fefb616b1a6f96c0781274b0fb74b927c48a3174ed974",
+  "hypothesis": "K-bound-specialized loop with hoisted m_mask and n_mask predicates for tl.load A and tl.load B and one tl.dot per full trip will outperform baseline by removing per-iteration offset*BK arithmetic, K comparisons, and mask ANDs while retaining simple a_ptrs += BK and b_ptrs += BK * N advances.",
+  "expected_mechanism": "For full BK slabs, tl.load a uses only hoisted m_mask and tl.load b uses only hoisted n_mask with no offset*BK + k[None,:] or k[:,None] K-bound comparison and no second AND, then one tl.dot a,b into FP32 acc, then a_ptrs += BK and b_ptrs += BK * N. Only a single optional tail tl.load a_tail/b_tail with k_tail[None,:] < K and k_tail[:,None] < K masks plus one tail tl.dot handles K % BK != 0. Under the fixed launcher this keeps one tile live per trip and same BM/BN/BK staging, so it could lower integer, compare, and predicate instructions and mask movement per loop trip without adding operand staging, registers, or shared memory, leaving the pipeliner the same single-dot overlap window but with less address-predicate overhead.",
+  "reasoning_from_feedback": "This differs from the prior unevaluated Muse candidate SHA 22ce595f5eb134442dd186de8a3db1b25c9413391daa230dd9e9f87781da43fc which used two-slab unrolling with two tl.loads and two ordered tl.dots per trip and 2*BK pointer strides, and from the independently written human-reviewed trusted implementation SHA 5091c2df5c27ede3cce7b0472a157b8787e86c8714f0d384b5cd587babc9f5d0 evaluated in experiment SHA 7475d2479aff832788b96c30de0c52c978196b31430d1e4bfabfe47b67bfa2ee with feedback SHA 78fd1974d76cd8310189256653cc984d6d37b0e7abac2c898ccf52958b3a5e7e. It also differs from reviewed structural grouped_m4 and split_k kernels which changed only program-ID scheduling. Measured observations apply only to that trusted source, not to any generated source: six-case PASS, median paired 0.94736x with all eight pairs favoring baseline, A/A median deviation 4.85%, fewer dynamic SASS/branch counts but unchanged tensor-pipe counts, and higher static resources 120 to 129 registers and 24576 to 49152 bytes shared memory. No correctness or timing is claimed for this new unevaluated source. That the extra staging or lower occupancy caused the slower screening is only a hypothesis because occupancy and causality were not measured. This proposal instead keeps one tl.dot per trip and removes per-trip K-mask work to hypothesize lower overhead without the doubled live tiles and shared-memory increase.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "range",
+      "tl.arange",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.program_id",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "0dadc8e70d770e88347fefb616b1a6f96c0781274b0fb74b927c48a3174ed974"
+  }
+}
