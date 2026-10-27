@@ -1,0 +1,128 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T22:46:53.133428+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "review_from": "/home/daniel/projects/national-tensor/evaluations/kernel-evolution/20261027T224416012594Z",
+  "trusted_feedback_path": null,
+  "trusted_feedback_sha256": null,
+  "trusted_experiment_sha256": null,
+  "trusted_feedback_provenance": null,
+  "trusted_implementation_sha256": null,
+  "memory_families": [
+    "mask_hoisting",
+    "explicit_pipeline_hint"
+  ],
+  "memory_relationships": [
+    {
+      "id": "kernel:20261027T224416012594Z",
+      "families": [
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "generated_proposal",
+      "outcome": "awaiting review",
+      "performance_interpretation": "Not measured",
+      "screening": null,
+      "artifact_path": "evaluations/kernel-evolution/20261027T224416012594Z/candidate.py"
+    },
+    {
+      "id": "kernel:20261027T163630745455Z",
+      "families": [
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "generated_proposal",
+      "outcome": "awaiting review",
+      "performance_interpretation": "Not measured",
+      "screening": null,
+      "artifact_path": "evaluations/kernel-evolution/20261027T163630745455Z/candidate.py"
+    },
+    {
+      "id": "trusted:trusted-compute:20261027T154233319712Z",
+      "families": [
+        "explicit_pipeline_hint",
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "trusted_implementation",
+      "outcome": "screening_promising",
+      "performance_interpretation": "Inconclusive",
+      "screening": {
+        "measurement_method": "python_launch_cuda_event",
+        "median_paired_speedup": 1.0023913255893322,
+        "baseline_median_ms": 0.0613369607925415,
+        "candidate_median_ms": 0.06118911981582642,
+        "paired_ratio_mad": 0.04185694284419611,
+        "aa_median_absolute_ratio_deviation": 0.038414083020193,
+        "screening_only": true
+      },
+      "artifact_path": "evaluations/trusted-compute/20261027T154233319712Z/"
+    },
+    {
+      "id": "kernel:20261027T150316362990Z",
+      "families": [
+        "explicit_pipeline_hint",
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "generated_proposal",
+      "outcome": "awaiting review",
+      "performance_interpretation": "Not measured",
+      "screening": null,
+      "artifact_path": "evaluations/kernel-evolution/20261027T150316362990Z/candidate.py"
+    }
+  ],
+  "candidate_sha256": "1a41b6c475acd16ef382127004cb1c2fcaf7280c3269f58e74c4a6cacd98e52a",
+  "hypothesis": "B-first hoisted-mask K-loop with recomputed a_ptrs/b_ptrs, tl.max_contiguous load hints, and tl.range num_stages=3 pipelining will outperform baseline by overlapping global loads with MMA while lowering per-iteration mask and pointer overhead for tl.load A, tl.load B and tl.dot.",
+  "expected_mechanism": "Hoist m_mask and n_mask once and reuse them in tl.load A mask, tl.load B mask and tl.store mask to remove per-trip m<M and n<N rebuilds. Recompute a_ptrs from a_base+k_a and b_ptrs from b_base+k_b*N with single k_off instead of incremental a_ptrs+=BK and b_ptrs+=BK*N to shorten the loop-carried pointer dependency. Issue tl.load B for the larger 32x128 tile before tl.load A so the larger async copy starts earlier, then single tl.dot a,b into FP32 acc per trip. Wrap pointers with tl.max_contiguous with BK/BN to guide contiguous vectorized global loads. Use tl.range with num_stages=3 to give the pipeliner an explicit software-pipeline hint for overlapping next-tile tl.load operations with current-tile tl.dot.",
+  "reasoning_from_feedback": "This differs from the prior unevaluated peeled cur/nxt proposal which uses prologue tl.load a_cur/b_cur, loop over tl.cdiv(K,BK)-1 with tl.load a_nxt/b_nxt before tl.dot cur then rotate and single a_ptrs+=BK advance plus trailing tl.dot; this proposal has no prologue, no cur/nxt rotation, and no trailing dot, using recomputed pointers and one tl.load B then tl.load A then tl.dot per trip. It differs from the unevaluated mask_hoisting plus k_bound_specialization proposal by retaining full (k_a<K) and (k_b<K) masks every iteration for boundary-shape correctness instead of removing K checks on full slabs. It differs from trusted-compute mask_hoisting plus explicit pipeline hint by adding B-first ordering, base-plus-offset pointer recomputation, and tl.max_contiguous hints rather than only hoisted masks and k_off. It differs from trusted-two-slab k_loop_unrolling which does two tl.load pairs and two ordered tl.dot per trip with doubled shared memory and screening loss by keeping one tl.dot per trip and baseline shared footprint. It keeps baseline program-ID mapping and does not use Split-K or Grouped-M4 scheduling swizzles. No compilation, correctness, or timing result is claimed for unevaluated candidates, and trusted screening ratios are not compared across runs because compatibility marks timing_directly_comparable false and each ratio belongs to its own paired run; source-family similarity is not treated as identical compiled behavior.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "tl.arange",
+      "tl.cdiv",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.max_contiguous",
+      "tl.program_id",
+      "tl.range",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "1a41b6c475acd16ef382127004cb1c2fcaf7280c3269f58e74c4a6cacd98e52a"
+  }
+}

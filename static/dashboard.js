@@ -22,7 +22,10 @@
     status.dataset.state = data.state;
     button.disabled = Boolean(data.active);
     detail.hidden = !data.detail_url;
-    if (data.detail_url) detail.href = data.detail_url;
+    if (data.detail_url) {
+      detail.href = data.detail_url;
+      detail.textContent = data.state === "failed" ? "View original proposal →" : "View saved proposal →";
+    }
     if (data.active && poll === null) {
       poll = window.setInterval(refresh, 1000);
     } else if (!data.active && poll !== null) {

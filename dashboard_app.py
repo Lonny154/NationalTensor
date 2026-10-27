@@ -16,6 +16,7 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, ses
 from dashboard_data import ROOT, load_compiler_detail, load_history
 from dashboard_interpretation import decorate_history
 from dashboard_proposals import ProposalManager
+import experiment_memory
 from kernel_evolution import MODEL as PROPOSAL_MODEL
 
 
@@ -85,6 +86,59 @@ def _sample_chart(timing: dict | None) -> dict | None:
             "candidate_median_x": x(timing.get("candidate_ms", low))
                 if isinstance(timing.get("candidate_ms"), (int, float))
                 and timing["candidate_ms"] > 0 else None}
+
+
+def _prompt_evidence(selected: dict, records: dict) -> dict:
+    """Describe only evidence actually present in the saved proposal prompt."""
+    context = selected.get("prompt_context")
+    context = context if isinstance(context, dict) else {}
+    raw = context.get("relevant_experiment_memory")
+    raw = raw if isinstance(raw, list) else []
+    trusted, generated = [], []
+    for item in raw[:8]:
+        if not isinstance(item, dict):
+            continue
+        kind = item.get("kind")
+        if kind not in {"trusted_implementation", "generated_proposal"}:
+            continue
+        record = records.get(item.get("id")) if isinstance(item.get("id"), str) else None
+        original = item.get("original_muse_source_sha256")
+        reviewed = item.get("trusted_implementation_sha256")
+        verified = bool(
+            record and original and
+            ((kind == "trusted_implementation"
+              and record.get("kind") in {"trusted-compute", "trusted-two-slab"}
+              and reviewed and record.get("generated_sha256") == original
+              and record.get("trusted_sha256") == reviewed
+              and record.get("exact_generated_source_evaluated") is False)
+             or (kind == "generated_proposal" and record.get("kind") == "kernel"
+                 and record.get("source_hash_valid") is True
+                 and record.get("source_sha256") == original)))
+        row = {"id": record["id"] if verified else None,
+               "label": (record.get("label") or record["id"]) if verified
+                        else str(item.get("id", "unknown"))[:100],
+               "verified": verified, "original_sha256": original,
+               "trusted_sha256": reviewed,
+               "performance": item.get("performance_interpretation") if kind == "trusted_implementation" else None}
+        (trusted if kind == "trusted_implementation" else generated).append(row)
+    prior = context.get("prior_unevaluated_review")
+    if isinstance(prior, dict):
+        prior_hash = prior.get("candidate_sha256")
+        if isinstance(prior_hash, str) and not any(
+                row["original_sha256"] == prior_hash for row in generated):
+            record = next((row for row in records.values()
+                           if row.get("kind") == "kernel"
+                           and row.get("source_hash_valid") is True
+                           and row.get("source_sha256") == prior_hash), None)
+            generated.append({"id": record["id"] if record else None,
+                              "label": (record.get("label") or record["id"])
+                                       if record else "Prior generated proposal",
+                              "verified": bool(record), "original_sha256": prior_hash,
+                              "trusted_sha256": None, "performance": None})
+    return {"trusted": trusted, "generated": generated,
+            "unverified_direct": isinstance(
+                context.get("external_trusted_implementation_feedback"), dict)
+                and not selected.get("feedback_link")}
 
 
 def create_app(root: Path = ROOT) -> Flask:
@@ -182,11 +236,25 @@ def create_app(root: Path = ROOT) -> Flask:
             compiler = load_compiler_detail(root, selected)
         comparison = None
         comparison_trusted = None
+        related_memory = []
+        prompt_evidence = None
+        mechanism_primary = None
+        mechanism_secondary = []
         if selected:
             if selected["kind"].startswith("trusted-"):
                 comparison = selected.get("comparison")
                 comparison_trusted = selected
             elif selected["kind"] == "kernel":
+                prompt_evidence = _prompt_evidence(selected, records)
+                memory = experiment_memory.from_history(history)
+                current_memory = next((entry for entry in memory["entries"]
+                                       if entry["id"] == selected["id"]), None)
+                if current_memory:
+                    mechanism_primary = experiment_memory.FAMILY_NAMES.get(
+                        current_memory["primary_family"])
+                    mechanism_secondary = [experiment_memory.FAMILY_NAMES[name]
+                                           for name in current_memory["secondary_families"]]
+                related_memory = experiment_memory.related_for(memory, selected["id"])
                 for related_id in selected.get("related_trusted", []):
                     related = records.get(related_id)
                     if related and related.get("comparison"):
@@ -198,6 +266,9 @@ def create_app(root: Path = ROOT) -> Flask:
             selected=selected, timing=timing, aa=aa,
             chart=_sample_chart(timing), compiler=compiler,
             comparison=comparison, comparison_trusted=comparison_trusted,
+            related_memory=related_memory, prompt_evidence=prompt_evidence,
+            mechanism_primary=mechanism_primary,
+            mechanism_secondary=mechanism_secondary,
             csrf_token=session["csrf_token"], proposal_model=PROPOSAL_MODEL)
 
     return app

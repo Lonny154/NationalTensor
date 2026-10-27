@@ -1,0 +1,110 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T22:44:16.013479+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "review_from": "/home/daniel/projects/national-tensor/evaluations/kernel-evolution/20261027T200203159236Z",
+  "trusted_feedback_path": null,
+  "trusted_feedback_sha256": null,
+  "trusted_experiment_sha256": null,
+  "trusted_feedback_provenance": null,
+  "trusted_implementation_sha256": null,
+  "memory_families": [
+    "mask_hoisting"
+  ],
+  "memory_relationships": [
+    {
+      "id": "kernel:20261027T163630745455Z",
+      "families": [
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "generated_proposal",
+      "outcome": "awaiting review",
+      "performance_interpretation": "Not measured",
+      "screening": null,
+      "artifact_path": "evaluations/kernel-evolution/20261027T163630745455Z/candidate.py"
+    },
+    {
+      "id": "trusted:trusted-compute:20261027T154233319712Z",
+      "families": [
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "trusted_implementation",
+      "outcome": "screening_promising",
+      "performance_interpretation": "Inconclusive",
+      "screening": {
+        "measurement_method": "python_launch_cuda_event",
+        "median_paired_speedup": 1.0023913255893322,
+        "baseline_median_ms": 0.0613369607925415,
+        "candidate_median_ms": 0.06118911981582642,
+        "paired_ratio_mad": 0.04185694284419611,
+        "aa_median_absolute_ratio_deviation": 0.038414083020193,
+        "screening_only": true
+      },
+      "artifact_path": "evaluations/trusted-compute/20261027T154233319712Z/"
+    },
+    {
+      "id": "kernel:20261027T150316362990Z",
+      "families": [
+        "mask_hoisting"
+      ],
+      "reason": "Shared deterministic optimization family; implementation and compiled behavior may differ.",
+      "source_structure_match": false,
+      "gpu_match": true,
+      "kind": "generated_proposal",
+      "outcome": "awaiting review",
+      "performance_interpretation": "Not measured",
+      "screening": null,
+      "artifact_path": "evaluations/kernel-evolution/20261027T150316362990Z/candidate.py"
+    }
+  ],
+  "candidate_sha256": "f7c70ce4d1534a4de94d152b7354f91c6e31f2d8e80cde5dc4e0e6d086ec3238",
+  "hypothesis": "Peeled software-pipelined K-loop with prologue tl.load A/B and per-trip tl.load next-A/next-B before tl.dot current will outperform baseline by overlapping global loads with MMA while keeping single tl.dot per tile.",
+  "expected_mechanism": "Prologue issues tl.load a_cur/b_cur with hoisted m_mask/n_mask, each loop trip issues tl.load a_nxt from a_ptrs+BK and b_nxt from b_ptrs+BK*N with k_next+BK masks before tl.dot a_cur,b_cur into FP32 acc, then rotates cur=nxt and does single a_ptrs+=BK and b_ptrs+=BK*N advances plus trailing tl.dot, so the num_stages=3 pipeliner can overlap next-tile global loads with current-tile dot while reusing m_mask/n_mask in tl.load and tl.store masks.",
+  "reasoning_from_feedback": "This differs from the prior unevaluated review which is two-slab unrolling with two tl.load A/B and two tl.dot per trip and 2*BK pointer advances and is still not compiled/checked/timed, so no measured feedback is claimed for it. It differs from trusted-two-slab k_loop_unrolling which had screening loss and doubled shared memory/mma sites with 12 trips x 2 dots; this keeps single tl.dot per logical tile, single BK advances, and rotates one live buffer to avoid extra staging. It reuses the trusted-compute mask_hoisting idea of hoisted m_mask/n_mask but the main change is load-next-before-dot-current reordering with prologue/epilog rather than only mask arithmetic and tl.range hint. It keeps baseline program-ID mapping and avoids reviewed structural Split-K global reduction and Grouped-M4 swizzle. Each screening ratio belongs to its paired run with timing_directly_comparable false, so absolute times are not pooled and a trusted result belongs only to its independently written implementation.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "range",
+      "tl.arange",
+      "tl.cdiv",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.program_id",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "f7c70ce4d1534a4de94d152b7354f91c6e31f2d8e80cde5dc4e0e6d086ec3238"
+  }
+}

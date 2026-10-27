@@ -1,0 +1,55 @@
+{
+  "status": "awaiting_human_review",
+  "created_utc": "2026-10-27T20:02:03.160122+00:00",
+  "model": "muse-spark-1.3",
+  "shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "gpu": "NVIDIA GeForce RTX 4060 Ti",
+  "hardware": {
+    "compute_capability": [
+      8,
+      9
+    ],
+    "multiprocessor_count": 34,
+    "total_memory_bytes": 17175150592
+  },
+  "baseline_sha256": "4fc8041c761226f10ccffbb0e5588b73e769372bb72f8354c0a845a66d0df877",
+  "launcher_sha256": "349aed3fb91b4f0e59f28417d241ddd9b2fa9359f33b95905c443b039b073999",
+  "numeric_config": {
+    "block_m": 64,
+    "block_n": 128,
+    "block_k": 32,
+    "num_warps": 4,
+    "num_stages": 3
+  },
+  "measurement_method": "python_launch_cuda_event",
+  "feedback_from": null,
+  "review_from": "/home/daniel/projects/national-tensor/evaluations/kernel-evolution/20261027T163630745455Z",
+  "trusted_feedback_path": null,
+  "trusted_feedback_sha256": null,
+  "trusted_experiment_sha256": null,
+  "trusted_feedback_provenance": null,
+  "trusted_implementation_sha256": null,
+  "candidate_sha256": "f2ad87eab348d9e7b1d7c9843a85b2431f2130da1c013dfa5c447bc49e9a0728",
+  "hypothesis": "Two-slab K-loop unrolling with two tl.load A, two tl.load B, and two tl.dot per loop trip and 2*BK pointer advances will outperform baseline by halving loop iterations and amortizing loop overhead.",
+  "expected_mechanism": "Each trip issues tl.load a0/b0 plus tl.dot a0,b0 then tl.load a1 from a_ptrs+BK and b1 from b_ptrs+BK*N plus tl.dot a1,b1 into FP32 acc, then single a_ptrs += BK*2 and b_ptrs += BK*2*N updates. This halves branch and mask-address recomputation versus one tl.dot per trip, keeps the same FP16 tl.load / FP32 tl.dot / FP16 tl.store semantics, and gives the num_stages=3 pipeliner two independent load-dot chains per trip to overlap.",
+  "reasoning_from_feedback": "This differs from the prior unevaluated review which used a K-bound-specialized single tl.dot per full trip with hoisted m_mask/n_mask and separate tail tl.load/tl.dot, and differs from reviewed grouped_m4 and split_k structural kernels which changed only CTA ordering or K-parallelism. No compilation, correctness, or timing result exists for the prior candidate, so no measured feedback is claimed; this proposal instead changes inner K-loop organization and operand-loading/dot density while retaining baseline program-ID mapping and full per-slab M/N/K masks for boundary shapes.",
+  "static_findings": {
+    "ast_check": "accepted_for_review_only",
+    "calls": [
+      "range",
+      "tl.arange",
+      "tl.cdiv",
+      "tl.dot",
+      "tl.full",
+      "tl.load",
+      "tl.program_id",
+      "tl.store",
+      "value.to"
+    ],
+    "source_sha256": "f2ad87eab348d9e7b1d7c9843a85b2431f2130da1c013dfa5c447bc49e9a0728"
+  }
+}

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dashboard_app import _sample_chart, create_app
+from dashboard_app import _prompt_evidence, _sample_chart, create_app
 import dashboard_data
 from dashboard_interpretation import (
     decorate_history, hypothesis_evidence, proposal_summary, status_for,
@@ -273,6 +273,59 @@ class DashboardTests(unittest.TestCase):
         for invalid in ("../../secret.txt", "kernel:../../secret", "kernel:bad",
                         "trusted:trusted-compute:invalid"):
             self.assertEqual(client.get(f"/experiments/{invalid}").status_code, 404)
+
+
+    def test_prompt_distinguishes_direct_feedback_from_retrieved_memory(self):
+        data = dashboard_data.load_history()
+        proposal = next(item for item in data["proposals"]
+                        if item["id"] == "kernel:20261027T163630745455Z")
+        trusted = next(item for item in data["trusted"]
+                       if item["kind"] == "trusted-two-slab")
+        previous = next(item for item in data["proposals"]
+                        if item["id"] == "kernel:20261027T160014125560Z")
+        prompt_memory = [
+            {"id": trusted["id"], "kind": "trusted_implementation",
+             "original_muse_source_sha256": trusted["generated_sha256"],
+             "trusted_implementation_sha256": trusted["trusted_sha256"],
+             "performance_interpretation": "Screening loss"},
+            {"id": previous["id"], "kind": "generated_proposal",
+             "original_muse_source_sha256": previous["source_sha256"]},
+        ]
+        proposal["prompt_context"] = {"relevant_experiment_memory": prompt_memory}
+        proposal["feedback_link"] = None
+        records = {item["id"]: item for item in data["proposals"] + data["trusted"]}
+        evidence = _prompt_evidence(proposal, records)
+        self.assertTrue(evidence["trusted"][0]["verified"])
+        self.assertTrue(evidence["generated"][0]["verified"])
+        self.assertFalse(evidence["unverified_direct"])
+        with patch("dashboard_app.load_history", return_value=data):
+            page = create_app().test_client().get(f"/experiments/{proposal['id']}")
+        self.assertEqual(page.status_code, 200)
+        self.assertIn(b"No direct, hash-linked trusted feedback block", page.data)
+        self.assertIn(b"Historical trusted experiments retrieved through memory", page.data)
+        self.assertIn(b"source hashes match local trusted record", page.data)
+        self.assertIn(b"Related, unevaluated generated proposals in prompt", page.data)
+        self.assertIn(trusted["trusted_sha256"].encode(), page.data)
+
+        proposal["prompt_context"]["relevant_experiment_memory"][0][
+            "trusted_implementation_sha256"] = "0" * 64
+        self.assertFalse(_prompt_evidence(proposal, records)["trusted"][0]["verified"])
+        proposal["prompt_context"] = {"relevant_experiment_memory": [None, "bad", {}]}
+        self.assertEqual(_prompt_evidence(proposal, records)["trusted"], [])
+        proposal["prompt_context"] = {"relevant_experiment_memory": "bad"}
+        self.assertEqual(_prompt_evidence(proposal, records)["generated"], [])
+        proposal["prompt_context"] = {
+            "external_trusted_implementation_feedback": {"feedback_sha256": "0" * 64},
+            "relevant_experiment_memory": [{"id": "<script>alert(1)</script>",
+                                            "kind": "generated_proposal"}]}
+        self.assertTrue(_prompt_evidence(proposal, records)["unverified_direct"])
+        with patch("dashboard_app.load_history", return_value=data):
+            page = create_app().test_client().get(f"/experiments/{proposal['id']}")
+        self.assertIn(b"direct trusted-feedback block appears", page.data)
+        self.assertIn(b"&lt;script&gt;alert(1)&lt;/script&gt;", page.data)
+        self.assertNotIn(b"<script>alert(1)</script>", page.data)
+        proposal["prompt_context"] = None
+        self.assertEqual(_prompt_evidence(proposal, records)["trusted"], [])
 
 
 if __name__ == "__main__":

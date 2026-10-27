@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 import benchmark_proposal
+import experiment_memory
 import optimize
 
 
@@ -544,18 +545,35 @@ def reviewed_split_trusted_feedback(feedback_path, report_text, report, review):
             "feedback_for_next_proposal": report["feedback_for_next_proposal"]}
 
 
+def relevant_memory(memory_root, gpu, review=None):
+    """Retrieve a bounded, artifact-derived FC1 context for either entry point."""
+    anchor = experiment_memory.classify_families(
+        (review or {}).get("hypothesis"), (review or {}).get("expected_mechanism"),
+        (review or {}).get("kernel_source"))
+    review_dir = Path(review["candidate_dir"]) if review else None
+    return experiment_memory.retrieve(
+        experiment_memory.reconstruct(memory_root), shape=SHAPE, dtype="fp16",
+        gpu=gpu, method="python_launch_cuda_event",
+        baseline_sha256=source_sha256(baseline_source()),
+        launcher_sha256=source_sha256(inspect.getsource(benchmark_proposal.launch)),
+        numeric_config=optimize.BASELINE, anchor_families=anchor,
+        exclude_id=f"kernel:{review_dir.name}" if review_dir else None,
+        limit=5)
+
+
 def build_prompt(gpu, hardware, history, feedback=None, review=None,
-                 trusted_feedback=None):
+                 trusted_feedback=None, memory_context=None):
     context = {
         "workload": {"M": SHAPE[0], "N": SHAPE[1], "K": SHAPE[2],
                      "dtype": "fp16", "gpu": gpu, "hardware": hardware},
         "fixed_launcher_source": inspect.getsource(benchmark_proposal.launch),
         "baseline_kernel_source": baseline_source(),
         "numeric_config": optimize.BASELINE,
-        "previous_structural_results": history,
+        "previous_structural_results": ([] if memory_context else history),
         "reviewed_generated_candidate_feedback": feedback,
         "prior_unevaluated_review": review,
         "external_trusted_implementation_feedback": trusted_feedback,
+        "relevant_experiment_memory": memory_context or [],
         "constraints": [
             "Return one replacement @triton.jit matmul_kernel with exactly the baseline signature.",
             "Keep the existing launcher, one kernel launch, FP16 inputs/output, FP32 accumulation.",
@@ -575,6 +593,13 @@ def build_prompt(gpu, hardware, history, feedback=None, review=None,
             "In reasoning_from_feedback, explain how this implementation differs from both prior generated attempts and reviewed structural kernels; do not claim measured feedback for unevaluated code.",
             "Use plain local assignments: annotated local assignments (AnnAssign) are currently unsupported by the review filter.",
         ])
+    if memory_context:
+        context["constraints"].append(
+            "Use relevant_experiment_memory to identify tested failures and unevaluated ideas. "
+            "Explain how this mechanism differs from those attempts. A trusted result "
+            "belongs only to its independently written implementation; source-family "
+            "similarity is not evidence of identical compiled behavior. Respect the "
+            "compatibility labels and do not compare incompatible timings as equivalent.")
     if trusted_feedback is not None:
         if review is None:
             raise ValueError("trusted feedback requires the related unevaluated proposal")
@@ -618,10 +643,13 @@ def append_jsonl(path, record):
 
 def propose_to_directory(client, prompt, root, *, feedback_from=None,
                          review_from=None, trusted_feedback=None, gpu=None,
-                         hardware=None, max_attempts=3, on_response=None):
+                         hardware=None, max_attempts=3, on_response=None,
+                         memory_root=None):
     """One accepted candidate at most; rejected responses remain in the audit."""
     if not 1 <= max_attempts <= 3:
         raise ValueError("max_attempts must be between 1 and 3")
+    if memory_root is None:
+        memory_root = Path(__file__).resolve().parent
     folder = root / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     folder.mkdir(parents=True, exist_ok=False)
     audit_path = folder / "proposal_audit.jsonl"
@@ -670,6 +698,24 @@ def propose_to_directory(client, prompt, root, *, feedback_from=None,
             append_jsonl(audit_path, audit)
             current_prompt += f"\nPrevious proposal rejected: {exc}. Return a valid replacement."
             continue
+        relation = experiment_memory.compare_candidate(
+            experiment_memory.reconstruct(memory_root),
+            source_sha256=findings["source_sha256"],
+            hypothesis=obj["hypothesis"], mechanism=obj["expected_mechanism"],
+            source=obj["kernel_source"], shape=SHAPE, gpu=gpu)
+        audit["memory_relationships"] = relation
+        metadata["memory_families"] = relation["families"]
+        metadata["memory_primary_family"] = relation["primary_family"]
+        metadata["memory_secondary_families"] = relation["secondary_families"]
+        metadata["memory_relationships"] = relation["related"]
+        if relation["exact_duplicate_of"]:
+            audit["duplicate_of"] = relation["exact_duplicate_of"]
+            append_jsonl(audit_path, audit)
+            metadata.update({"status": "duplicate_source",
+                             "candidate_sha256": findings["source_sha256"],
+                             "duplicate_of": relation["exact_duplicate_of"],
+                             "static_findings": findings})
+            break
         append_jsonl(audit_path, audit)
         (folder / "candidate.py").write_text(obj["kernel_source"])
         metadata.update({"status": "awaiting_human_review",
@@ -773,7 +819,10 @@ def main(argv=None):
             pass
     if not gpu:
         parser.error("GPU unavailable; provide --gpu with the target device name")
-    prompt = build_prompt(gpu, hardware, history, feedback, review, trusted_feedback)
+    memory_root = Path(__file__).resolve().parent
+    memory_context = relevant_memory(memory_root, gpu, review)
+    prompt = build_prompt(gpu, hardware, history, feedback, review, trusted_feedback,
+                          memory_context=memory_context)
     if args.prepare_only:
         folder = prepare_request(prompt, args.out_dir, review=review,
                                  gpu=gpu, hardware=hardware,
@@ -784,7 +833,7 @@ def main(argv=None):
     folder, metadata = propose_to_directory(
         client, prompt, args.out_dir, feedback_from=args.feedback_from,
         review_from=args.review_from, trusted_feedback=trusted_feedback,
-        gpu=gpu, hardware=hardware)
+        gpu=gpu, hardware=hardware, memory_root=memory_root)
     print(f"Saved proposal artifacts: {folder}; status: {metadata['status']}")
     return 0 if metadata["status"] == "awaiting_human_review" else 1
 

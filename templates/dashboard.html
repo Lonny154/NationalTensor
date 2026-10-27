@@ -164,15 +164,28 @@
 
       {% if selected.kind == 'kernel' %}
       <section class="panel"><div class="panel-head"><div><div class="eyebrow">COMPILER-INFORMED FEEDBACK</div><h2>What reached this proposal</h2></div></div>
+        <h3>Direct, hash-linked trusted feedback</h3>
         {% if selected.feedback_link and records[selected.feedback_link] %}{% set prior = records[selected.feedback_link] %}<p>The saved prompt includes trusted experiment <a href="{{ url_for('experiment_detail', experiment_id=prior.id) }}">{{ prior.label }}</a>, matching its feedback SHA and both source hashes.</p>
         <div class="callout"><b>Measured feedback in prompt</b><p>{{ selected.prompt_context.external_trusted_implementation_feedback.feedback_for_next_proposal }}</p></div>
-        {% elif selected.prompt_context.prior_unevaluated_review %}<p>The saved prompt references an earlier unevaluated generated source. No trusted measurement link was present.</p>
-        {% else %}<p>No earlier trusted feedback appears in the accepted prompt.</p>{% endif %}
+        {% elif prompt_evidence.unverified_direct %}<p>A direct trusted-feedback block appears in the saved prompt, but its hashes or source artifact could not be verified here.</p>
+        {% else %}<p>No direct, hash-linked trusted feedback block is present in the saved prompt.</p>{% endif %}
+        <h3>Historical trusted experiments retrieved through memory</h3>
+        {% for item in prompt_evidence.trusted %}<p>{% if item.id %}<a href="{{ url_for('experiment_detail', experiment_id=item.id) }}">{{ item.label }}</a>{% else %}{{ item.label }}{% endif %} · {{ 'source hashes match local trusted record' if item.verified else 'saved prompt summary; local record verification unavailable' }} · generated SHA <span class="hash">{{ item.original_sha256 or 'unavailable' }}</span> · independently reviewed SHA <span class="hash">{{ item.trusted_sha256 or 'unavailable' }}</span> · {{ item.performance or 'outcome unavailable' }}</p>{% else %}<p>No historical trusted experiment summary was retrieved into this prompt.</p>{% endfor %}
+        <h3>Related, unevaluated generated proposals in prompt</h3>
+        {% for item in prompt_evidence.generated %}<p>{% if item.id %}<a href="{{ url_for('experiment_detail', experiment_id=item.id) }}">{{ item.label }}</a>{% else %}{{ item.label }}{% endif %} · generated SHA <span class="hash">{{ item.original_sha256 or 'unavailable' }}</span> · no correctness or performance result for the generated source</p>{% else %}<p>No earlier generated proposal was included in the saved prompt.</p>{% endfor %}
         {% if selected.related_trusted %}<p>Independently implemented evaluations linked by source hash:</p><ul>{% for id in selected.related_trusted %}<li><a href="{{ url_for('experiment_detail', experiment_id=id) }}">{{ records[id].label }}</a> · generated source remains unevaluated</li>{% endfor %}</ul>{% endif %}
       </section>
       {% elif selected.kind == 'structural' and selected.prior_results_in_prompt %}
       <section class="panel"><div class="panel-head"><div><div class="eyebrow">SAVED PROMPT HISTORY</div><h2>Earlier results supplied to Muse</h2></div></div><p>The following records were included in this proposal's saved prompt:</p>
         {% for prior in selected.prior_results_in_prompt %}<div class="history-row"><b>{{ prior.config.schedule if prior.config else 'unknown strategy' }}</b><span>{{ prior.correctness }}</span><span>{{ prior.median_paired_speedup|ratio }}</span><span>{{ prior.optimization_status }}</span></div>{% endfor %}
+      </section>
+      {% endif %}
+
+      {% if selected.kind == 'kernel' %}
+      <section class="panel"><div class="panel-head"><div><div class="eyebrow">EXPERIMENT MEMORY</div><h2>Related experiments</h2></div></div>
+        <p class="subtle">Primary mechanism: {{ mechanism_primary or 'Unknown' }}{% if mechanism_secondary %} · Secondary: {{ mechanism_secondary|join(', ') }}{% endif %}. Tags are deterministic review aids, not compiler findings.</p>
+        <p class="subtle">These local relationships are reconstructed for viewing and may differ from the records in the saved prompt above. Shared family does not establish identical compiled behavior; trusted measurements apply only to independently written kernels.</p>
+        {% for related in related_memory %}<div class="history-row"><a href="{{ url_for('experiment_detail', experiment_id=related.id) }}">{{ records[related.id].label if related.id in records else related.id }}</a><span>{{ related.family_labels|join(', ') if related.families else 'Source structure' }}</span><span>{{ 'trusted implementation' if related.kind == 'trusted_implementation' else 'reviewed strategy' if related.kind == 'reviewed_structural_strategy' else 'unevaluated generated source' }}</span><span>{{ related.correctness }}</span><span>{{ related.performance_interpretation }} · {{ related.screening.median_paired_speedup|ratio if related.screening else 'no screening' }} · {{ related.confirmation }}</span><span>{{ related.reason }}</span></div>{% else %}<p>No earlier proposal shares a known optimization family or source structure in this workload. Unknown ideas remain eligible for review.</p>{% endfor %}
       </section>
       {% endif %}
 

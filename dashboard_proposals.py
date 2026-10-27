@@ -44,7 +44,8 @@ def _context(root: Path):
         raise ValueError("The prior FC1 proposal lacks hardware metadata.")
     structural = root / "evaluations" / "structural-loop"
     prompt = kernel_evolution.build_prompt(
-        gpu, hardware, kernel_evolution.structural_history(structural), review=review)
+        gpu, hardware, kernel_evolution.structural_history(structural), review=review,
+        memory_context=kernel_evolution.relevant_memory(root, gpu, review))
     return review_dir, gpu, hardware, prompt
 
 
@@ -97,12 +98,15 @@ class ProposalManager:
             output = self.root / "evaluations" / "kernel-evolution"
             folder, metadata = kernel_evolution.propose_to_directory(
                 client, prompt, output, review_from=review_dir, gpu=gpu,
-                hardware=hardware, max_attempts=1,
+                hardware=hardware, max_attempts=1, memory_root=self.root,
                 on_response=lambda: self._update(
                     "validating_response", "Validating the saved model response."))
             if metadata["status"] == "awaiting_human_review":
                 self._update("saved_for_review", "Proposal saved for human review.",
                              active=False, experiment=f"kernel:{folder.name}")
+            elif metadata["status"] == "duplicate_source":
+                self._update("failed", "Exact source duplicate; response audited. View the original proposal.",
+                             active=False, experiment=metadata["duplicate_of"])
             elif metadata.get("error") in {"APITimeoutError", "TimeoutError"}:
                 self._update("failed", "Muse request timed out. No proposal was accepted.",
                              active=False)

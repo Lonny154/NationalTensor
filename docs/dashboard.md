@@ -42,11 +42,51 @@ limit. The app has no CORS allowance, uses a strict content security policy,
 and sends no credentials to the browser. It still has no GPU evaluation path;
 human approval and isolated execution remain separate workflows.
 
+## Experiment memory
+
+`experiment_memory.py` rebuilds a bounded index from the saved structural,
+generated-proposal, and trusted-evaluation artifacts on each read. No new
+database or persistent cache is created. Generated proposals retain their
+own unevaluated status; correctness, compiler evidence, and screening remain
+attached to the independently reviewed implementations. Prompt retrieval
+includes at most six summaries, prioritizing matching workload and GPU,
+evaluated results, compiler evidence, and related mechanisms. It records
+timing method, numeric configuration, and baseline/launcher source-version
+compatibility, and labels incompatible measurements as context only.
+
+Both the CLI and dashboard supply this memory to the next Muse prompt. The
+dashboard's proposal details show earlier experiments in the same known
+optimization families. Classification is conservative: unknown ideas remain
+reviewable, and matching source structure is only a hint. A full-slab loop
+with a separate K tail is primarily tagged K-bound specialization; mask
+hoisting can remain a secondary tag. After static
+validation, an exact SHA-256 repeat is saved in the raw audit as
+`duplicate_source`, linked to the original proposal, and not saved as a new
+review candidate. A different source in a known family can still be saved
+for human review with its relationship recorded. No generated source is run.
+
 The overview counts the saved structural and accepted kernel proposals, and
 separately counts rejected responses. The timeline links an original Muse
 source to a trusted experiment only when saved hashes match. A later proposal
 is linked to trusted feedback only when its saved prompt contains the matching
 feedback and source hashes. The generated source itself remains unevaluated.
+The detail page distinguishes this direct feedback from historical trusted
+summaries retrieved into the saved prompt. It shows the latter with local
+source-hash verification status. Earlier generated proposals in the prompt
+remain labelled unevaluated. The related-experiments list is rebuilt for
+viewing and does not imply that every listed record reached Muse.
+
+The live memory-informed proposal in
+`evaluations/kernel-evolution/20261027T224653132929Z/` remains **awaiting
+review** (source SHA-256
+`1a41b6c475acd16ef382127004cb1c2fcaf7280c3269f58e74c4a6cacd98e52a`).
+Its static AST review accepted the source for review only. Inspection of the
+installed Triton 3.6.0 implementation found a likely compilation blocker:
+the proposal passes scalar `BN` and `BK` values to `tl.max_contiguous` for 2D
+pointer tensors. Triton converts each scalar hint to a one-element list, then
+requires one value per tensor dimension. This is an inference from the
+installed API, not a confirmed compilation failure. The generated source has
+not been imported, compiled, checked for correctness, or benchmarked.
 
 Performance plots show every saved paired screening sample on a logarithmic
 time axis, with the measurement method and A/A variability beside it. The

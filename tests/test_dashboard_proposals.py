@@ -155,6 +155,36 @@ class ProposalDashboardTests(unittest.TestCase):
         self.assertEqual(audit["raw_response"], bad.output_text)
         self.assertIn("rejection", audit)
 
+    def test_exact_duplicate_is_audited_and_links_to_original(self):
+        source = (self.root / "evaluations" / "kernel-evolution" / PRIOR_RUN /
+                  "candidate.py").read_text()
+        calls = []
+
+        def create(**kwargs):
+            calls.append(kwargs)
+            return reply(source)
+
+        with patch.dict(os.environ, {"MODEL_API_KEY": "test-key"}), \
+             patch("dashboard_proposals.OpenAI", return_value=SimpleNamespace(
+                 responses=SimpleNamespace(create=create))):
+            self.assertEqual(self.post().status_code, 202)
+            status = self.finish()
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(status["state"], "failed")
+        self.assertIn("Exact source duplicate", status["message"])
+        self.assertEqual(urlsplit(status["detail_url"]).path,
+                         f"/experiments/kernel:{PRIOR_RUN}")
+        runs = [p for p in (self.root / "evaluations" / "kernel-evolution").iterdir()
+                if p.name != PRIOR_RUN]
+        self.assertEqual(len(runs), 1)
+        self.assertFalse((runs[0] / "candidate.py").exists())
+        metadata = json.loads((runs[0] / "metadata.json").read_text())
+        audit = json.loads((runs[0] / "proposal_audit.jsonl").read_text())
+        self.assertEqual(metadata["status"], "duplicate_source")
+        self.assertEqual(metadata["duplicate_of"], f"kernel:{PRIOR_RUN}")
+        self.assertEqual(audit["duplicate_of"], metadata["duplicate_of"])
+        self.assertEqual(json.loads(audit["raw_response"])["kernel_source"], source)
+
     def test_duplicate_request_is_rejected_while_first_is_active(self):
         entered, release = threading.Event(), threading.Event()
 
