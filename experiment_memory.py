@@ -96,7 +96,7 @@ def _confirmed(record):
             and isinstance(decision, dict) and decision.get("confirmed") is True)
 
 
-def from_history(history: dict) -> dict:
+def from_history(history: dict, *, profile_reports=()) -> dict:
     """Build entries from one already-loaded artifact snapshot."""
     entries = []
     proposals = {item["id"]: item for item in history.get("proposals", [])
@@ -191,6 +191,53 @@ def from_history(history: dict) -> dict:
             "related_proposal_id": proposal["id"],
             "artifact_path": record.get("artifact_path"),
         })
+    for report in profile_reports:
+        if report.get("status") != "profiling_complete_verified":
+            continue
+        summaries = report["summary"]
+        def pairs(metric):
+            return {key: summaries[key][metric]["captures"]
+                    for key in ("baseline", "mask_hoisting", "two_slab")}
+        entries.append({
+            "id": report["study_id"], "kind": "profiling_study",
+            "created_utc": "2026-10-28T00:42:49.599584+00:00",
+            "shape_mnk": report["workload"]["shape_mnk"],
+            "dtype": report["workload"]["dtype"],
+            "gpu": report["workload"]["gpu"],
+            "configuration": report["workload"]["numeric_config"],
+            "hypothesis": "Which reproducibly measured profiler bottleneck distinguishes the reviewed FC1 implementations?",
+            "mechanism": "Profile reviewed baseline, mask-hoisting, and two-slab kernels; no source optimization was evaluated.",
+            "families": [], "original_muse_source_sha256": None,
+            "trusted_implementation_sha256": None,
+            "source_identities": report["source_identities"],
+            "baseline_sha256": report["source_identities"]["baseline"]["kernel_sha256"],
+            "launcher_sha256": report["baseline_launcher_sha256"],
+            "compilation": "reviewed kernels compiled for captures",
+            "correctness": "PASS on FC1 seed 42 before each capture",
+            "screening": None, "confirmation": "not a performance experiment",
+            "compiler": None, "outcome": "profiling_complete_verified",
+            "performance_interpretation": "No latency conclusion",
+            "profiling_evidence": {
+                "method": report["method"],
+                "achieved_occupancy_pct": pairs("sm__warps_active.avg.pct_of_peak_sustained_active"),
+                "theoretical_occupancy_pct": pairs("sm__maximum_warps_per_active_cycle_pct"),
+                "shared_memory_bytes_per_block": pairs("launch__shared_mem_per_block_dynamic"),
+                "registers_per_thread": pairs("launch__registers_per_thread"),
+                "shared_memory_block_limit": pairs("launch__occupancy_limit_shared_mem"),
+                "register_block_limit": pairs("launch__occupancy_limit_registers"),
+                "long_scoreboard_warps_per_cycle": pairs("smsp__warps_issue_stalled_long_scoreboard.avg.per_cycle_active"),
+                "short_scoreboard_warps_per_cycle": pairs("smsp__warps_issue_stalled_short_scoreboard.avg.per_cycle_active"),
+                "barrier_warps_per_cycle": pairs("smsp__warps_issue_stalled_barrier.avg.per_cycle_active"),
+                "tensor_pipe_pct_peak": pairs("smsp__inst_executed_pipe_tensor.avg.pct_of_peak_sustained_active"),
+                "dram_bytes_per_second": pairs("dram__bytes.sum.per_second"),
+                "interpretation": report["interpretation"],
+                "limitations": report["limitations"],
+                "capture_count_per_kernel": 2,
+                "manifest_sha256": report["manifest_sha256"],
+            },
+            "provenance": "Hash-verified Nsight Compute captures of reviewed implementations; not CUDA-event latency",
+            "artifact_path": f"evaluations/planned-profiling/{report['study_id'].split(':', 1)[1]}/report.json",
+        })
     for entry in entries:
         entry["primary_family"] = entry["families"][0] if entry["families"] else None
         entry["secondary_families"] = entry["families"][1:]
@@ -200,7 +247,11 @@ def from_history(history: dict) -> dict:
 
 def reconstruct(root: Path = ROOT) -> dict:
     """Reload artifacts on every call, including after process restart."""
-    return from_history(load_history(root))
+    from profile_report import load_verified_report
+    report, warnings = load_verified_report(root)
+    memory = from_history(load_history(root), profile_reports=[report] if report else ())
+    memory["warnings"].extend(warnings)
+    return memory
 
 
 def compatibility(entry: dict, *, shape, dtype, gpu, method,
@@ -209,7 +260,9 @@ def compatibility(entry: dict, *, shape, dtype, gpu, method,
     same_shape = entry.get("shape_mnk") == list(shape)
     same_dtype = entry.get("dtype") == dtype
     same_gpu = entry.get("gpu") == gpu
-    recorded_method = (entry.get("screening") or {}).get("measurement_method")
+    recorded_method = ("nsight_compute_kernel_replay"
+                       if entry.get("kind") == "profiling_study"
+                       else (entry.get("screening") or {}).get("measurement_method"))
     same_method = recorded_method == method if recorded_method else None
     prior_base, prior_launcher = (entry.get("baseline_sha256"),
                                   entry.get("launcher_sha256"))
@@ -251,6 +304,7 @@ def retrieve(memory: dict, *, shape, dtype, gpu, method, baseline_sha256=None,
                               numeric_config=numeric_config)
         score = (100 * (match["workload"] == "same")
                  + 30 * (match["gpu"] == "same")
+                 + 90 * (entry["kind"] == "profiling_study")
                  + 45 * (entry["kind"] == "trusted_implementation")
                  + 30 * (entry["kind"] == "reviewed_structural_strategy")
                  + 15 * bool(set(entry["families"]) & set(anchor_families))
@@ -280,6 +334,7 @@ def retrieve(memory: dict, *, shape, dtype, gpu, method, baseline_sha256=None,
                                   for key in ("ttir", "ttgir", "ptx", "sass", "resources")
                                   if key in review and isinstance(review[key], str)},
             "compiler_resources": compiler.get("resources"),
+            "profiling_evidence": entry.get("profiling_evidence"),
             "provenance": entry["provenance"], "artifact_path": entry["artifact_path"],
         })
     return results

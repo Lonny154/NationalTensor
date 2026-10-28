@@ -31,7 +31,7 @@ KINDS = {
 OBSERVATIONS = {
     "correctness", "compilation", "performance_interpretation", "screening",
     "compiler_evidence", "compiler_resources", "confirmation", "provenance",
-    "outcome", "shape_mnk",
+    "outcome", "shape_mnk", "profiling_evidence",
 }
 FIELDS = {
     "research_question", "experiment_kind", "target_shape_mnk",
@@ -68,7 +68,7 @@ def _shape(value) -> list[int]:
 
 
 def _observation_available(entry: dict, key: str) -> bool:
-    if key in {"screening", "compiler_evidence", "compiler_resources"}:
+    if key in {"screening", "compiler_evidence", "compiler_resources", "profiling_evidence"}:
         return bool(entry.get(key))
     return entry.get(key) is not None
 
@@ -134,7 +134,11 @@ def _evidence_provenance(plan: dict, evidence: list[dict]) -> list[dict]:
 
 def build_context(root: Path = ROOT) -> dict:
     history = load_history(root)
-    memory = experiment_memory.from_history(history)
+    from profile_report import load_verified_report
+    profile, profile_warnings = load_verified_report(root)
+    memory = experiment_memory.from_history(history,
+        profile_reports=[profile] if profile else ())
+    memory["warnings"].extend(profile_warnings)
     if not memory["entries"]:
         raise ValueError("No verified experiment memory is available")
     proposals = [item for item in history["proposals"]
@@ -181,6 +185,8 @@ def build_context(root: Path = ROOT) -> dict:
                 "A single screening loss does not rule out an entire optimization family; scope conclusions to the tested implementation, configuration, workload, and method.",
                 "Matching PTX instruction multisets or resource counts do not prove identical runtime performance, overlap, or stalls.",
                 "Do not use A/A timing variation as a measure of profiler-counter uncertainty or claim an unmeasured bottleneck is established.",
+                "Nsight Compute replay counters are distinct from paired CUDA-event latency. Two captures are descriptive and do not prove causality or statistical significance.",
+                "When citing the completed profiling study, use its profiling_evidence observation key and preserve the source/manifest provenance.",
             ]}
 
 
@@ -189,7 +195,7 @@ def build_prompt(context: dict) -> str:
     if not evidence:
         raise ValueError("A planner prompt requires at least one saved evidence record")
     cited = evidence[0]
-    observation = next(key for key in ("screening", "correctness", "outcome")
+    observation = next(key for key in ("profiling_evidence", "screening", "correctness", "outcome")
                        if _observation_available(cited, key))
     example = {
         "research_question": "Which measured bottleneck should guide the next FC1 experiment?",
