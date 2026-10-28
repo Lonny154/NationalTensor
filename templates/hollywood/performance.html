@@ -1,0 +1,17 @@
+<div class="mission-kicker"><span>NT / COMPUTATIONAL ASSET RECOVERY</span><span>THE TREASURE VAULT</span></div>
+<section class="vault-heading"><span class="vault-symbol" aria-hidden="true">÷</span><div><div class="eyebrow">BASELINE ÷ CANDIDATE</div><h1>Count the cycles.<br>Keep the receipts.</h1><p>A ratio above 1 favors the candidate. Below 1 favors the baseline. Neither a gold border nor a large number can turn an unconfirmed screening into a discovery.</p></div></section>
+<div class="vault-ledger">{% for item in performance_events %}{% set measured = item.measurement %}
+  <article class="vault-entry" data-performance-id="{{ item.id }}">
+    <div class="vault-ratio"><span>RECORDED PAIRED SPEEDUP</span><strong>{{ measured.median_paired_speedup|ratio }}</strong><small>{{ 'Candidate faster in this run' if measured.median_paired_speedup > 1 else 'Candidate slower in this run' if measured.median_paired_speedup < 1 else 'Equal recorded ratio' }}</small></div>
+    <div class="vault-receipt"><div class="eyebrow">{{ item.experiment_type }} / {{ item.date_label }}</div><h2><a href="{{ item.evidence_url }}">{{ item.title }}</a></h2>
+      <p>{{ item.interpretation }} · {{ item.outcome|replace('_', ' ') }}</p>
+      <dl><div><dt>Baseline median</dt><dd>{{ measured.baseline_ms|ms }}</dd></div><div><dt>Candidate median</dt><dd>{{ measured.candidate_ms|ms }}</dd></div><div><dt>Workload M × N × K</dt><dd>{{ item.shape_mnk|join(' × ') }}</dd></div></dl>
+      <div class="vault-uncertainty">{% for key, value in measured.uncertainty.items() %}
+        {% if key == 'paired_ratio_mad' %}<span>Paired ratio MAD: {{ '%.5f'|format(value) }} (dimensionless)</span>
+        {% elif key == 'noise_interpretation' %}<p>{{ value }}</p>
+        {% else %}<span>{{ key|replace('_', ' ') }}: {{ value|pct }}</span>{% endif %}
+      {% else %}<span>Variability not recorded in this summary; inspect the raw evidence.</span>{% endfor %}</div>
+      <details><summary>Uncertainty, protocol, and raw receipts</summary><p>{{ measured.method }}</p><p>These are saved paired results from one run. Absolute measurements are not pooled across runs. A favorable ratio can reflect measurement variability; this view makes no new significance claim.</p><a href="{{ item.evidence_url }}">Inspect recorded variability, A/A controls, and raw evidence →</a></details>
+    </div>
+  </article>{% else %}<p>No verified latency measurements are available.</p>{% endfor %}</div>
+<div class="unmeasured-locker"><b>THE UNOPENED DRAWER / NOT MEASURED</b><p>Compiler diagnostics and workflow replays without timings have no latency or speedup to deposit. Their evidence belongs in the <a href="{{ url_for('home', view='timeline', filter='compiler') }}">compiler dossiers</a>.</p></div>

@@ -12,6 +12,7 @@ import re
 import secrets
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
+from dashboard_hollywood import mission_state
 
 from dashboard_data import ROOT, load_compiler_detail, load_history
 from dashboard_interpretation import decorate_history
@@ -320,7 +321,8 @@ def create_app(root: Path = ROOT) -> Flask:
             workflow_plans=plans, workflow_plan=selected_plan, workflow_review=review,
             workflow_binding=eligibility, workflow_blocked=blocked, workflow_evidence=evidence,
             workflow_state=state, workflow_warnings=warnings + memory["warnings"],
-            workflow_runner=RUNNER_ID)
+            workflow_runner=RUNNER_ID,
+            mission=mission_state(selected_plan, review, state, blocked, {row["id"]: row for row in memory["entries"]}))
 
     @app.get("/research/evidence/<path:evidence_id>")
     def research_evidence(evidence_id):
@@ -371,10 +373,25 @@ def create_app(root: Path = ROOT) -> Flask:
         selected_filter = request.args.get("filter", "all")
         if view == "timeline" and selected_filter not in TIMELINE_FILTERS:
             abort(400)
-        activity = build_activity(root, history=history) if view in {"timeline", "performance"} else None
+        activity = build_activity(root, history=history) if view in {"overview", "timeline", "performance"} else None
         records = {item["id"]: item for item in history["timeline"]}
         plans, planner_warnings = load_saved_plans(root)
         latest_plan = plans[-1] if plans else None
+        mission = None
+        if view == "overview":
+            # Read the same persisted review/job records used by /research. No action is invoked.
+            review, blocked = None, None
+            if latest_plan:
+                try:
+                    review = workflow.review(latest_plan["run_id"])
+                    current = binding(root, latest_plan["run_id"])
+                    if review and review["decision"] == "approved" and review["binding"] != current:
+                        blocked = "Approval identity changed. Execution is blocked."
+                except (ValueError, OSError) as exc:
+                    blocked = str(exc)
+            mission = mission_state(latest_plan, review,
+                {"planning": workflow.planning_status(), "jobs": workflow.jobs()}, blocked,
+                {row["id"]: row for row in activity["events"]})
         plan_references = (_planner_references(latest_plan, history, records, experiment_memory.reconstruct(root))
                            if latest_plan and view == "overview" else [])
         selected = records.get(selected_id) if selected_id else None
@@ -425,6 +442,7 @@ def create_app(root: Path = ROOT) -> Flask:
             mechanism_primary=mechanism_primary,
             mechanism_secondary=mechanism_secondary,
             latest_plan=latest_plan, plan_references=plan_references,
+            mission=mission, mission_events=activity_links(activity["events"][:6]) if view == "overview" else [],
             planner_warnings=planner_warnings,
             timeline_events=activity_links(filter_events(activity["events"], selected_filter)) if view == "timeline" else [],
             timeline_filters=TIMELINE_FILTERS, timeline_filter=selected_filter,

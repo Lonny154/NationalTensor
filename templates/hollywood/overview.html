@@ -1,0 +1,16 @@
+{% from 'hollywood/macros.html' import sequence, dossier %}
+<div class="mission-kicker"><span>NT / OPERATIONS DIRECTORATE</span><span>MISSION CONTROL · LOCAL RESEARCH</span></div>
+<section class="control-hero">
+  <div class="briefing-copy"><div class="eyebrow">OPERATION DECLARATION OF COMPUTE</div><h1>The founding fathers<br>hid the cycles.</h1>
+    <p class="cinema-lead">We brought a graphics card, a compiler, and an unreasonable amount of paperwork. Only the paperwork can authorize the heist.</p>
+    <div class="objective"><span>CURRENT RESEARCH OBJECTIVE / SAVED MUSE ADVISORY</span><h2>{{ latest_plan.plan.research_question if latest_plan else 'No saved research objective.' }}</h2></div>
+  </div>
+  <aside class="operation-order"><div class="cipher-seal" aria-hidden="true"><span>NT</span></div><span class="eyebrow">NEXT REAL ACTION</span><h2>{{ mission.title }}</h2><p>{{ mission.narrative }}</p>
+    <a class="mission-cta" href="{{ url_for('research', plan=latest_plan.run_id, _anchor=mission.anchor) if latest_plan else url_for('research') }}">{{ mission.action }} →</a>
+    <small>Navigation only. No approval or execution occurs here.</small>
+  </aside>
+</section>
+{{ sequence(mission) }}
+<div class="intel-heading"><div><div class="eyebrow">CLASSIFIED INTELLIGENCE</div><h2>Evidence survives the chase.</h2></div><a href="{{ url_for('home', view='timeline') }}">Open the mission archive →</a></div>
+<div class="dossier-grid">{% for item in mission_events %}{{ dossier(item, true) }}{% else %}<p>No verified activity is available.</p>{% endfor %}</div>
+<p class="cinema-footnote">Fictional operation. Actual research. No progress percentages, manufactured discoveries, or automatic execution.</p>

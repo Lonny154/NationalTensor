@@ -361,8 +361,10 @@ class ControlledWorkflowTests(unittest.TestCase):
         @app.get("/test-click-approve.js")
         def click_approve():
             return app.response_class(
+                "document.addEventListener('DOMContentLoaded', () => { "
+                "document.querySelector('[data-presentation-choice=hollywood]').click(); "
                 "const form = [...document.forms].find(f => f.action.endsWith('/approve')); "
-                "if (form) form.querySelector('button').click();", mimetype="application/javascript")
+                "if (form) form.querySelector('button').click(); });", mimetype="application/javascript")
 
         @app.after_request
         def inject_browser_click(response):

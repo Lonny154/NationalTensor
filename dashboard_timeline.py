@@ -175,6 +175,10 @@ def build_activity(root, *, history=None, memory=None):
         if not replay and all(type(value) in (int, float) and math.isfinite(value) and value > 0 for value in values):
             row["measurement"] = dict(zip(("baseline_ms", "candidate_ms", "median_paired_speedup"), values))
             row["measurement"]["method"] = screening.get("measurement_method")
+            row["measurement"]["uncertainty"] = {key: screening[key] for key in (
+                "paired_ratio_mad", "aa_median_absolute_ratio_deviation",
+                "aa_stages_3_median_absolute_ratio_deviation", "aa_stages_2_median_absolute_ratio_deviation",
+                "noise_interpretation") if key in screening}
             row["measurement_label"] = "Paired CUDA-event screening · unconfirmed" if entry["confirmation"] != "confirmed" else "Paired timing · confirmed"
         if kind != "confirmation_history":
             events.append(row)

@@ -1,10 +1,13 @@
+{% from "mission_labels.html" import label %}
 <!doctype html>
-<html lang="en">
+<html lang="en" data-view="{{ view }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NationalTensor · Research Console</title>
+  <script src="{{ url_for('static', filename='presentation-mode.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='hollywood.css') }}">
   <script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
 </head>
 <body>
@@ -14,21 +17,36 @@
     <div class="masthead-right"><span class="live-dot"></span> LOCAL RESEARCH CONSOLE <span class="separator">/</span> HUMAN APPROVAL</div>
   </header>
 
+  <div class="presentation-switch" role="group" aria-label="Dashboard presentation">
+    <span>CONSOLE MODE</span>
+    <button type="button" data-presentation-choice="research" aria-pressed="true">Research Mode</button>
+    <button type="button" data-presentation-choice="hollywood" aria-pressed="false">Hollywood Mode</button>
+  </div>
+  <aside class="mission-banner" aria-label="Mission briefing">
+    <div class="cipher-seal" aria-hidden="true"><span>NT</span></div>
+    <div><div class="eyebrow">NATIONAL TENSOR / BUREAU OF IMPROBABLE COMPUTATION</div>
+      <h2>Operation: Declaration of Compute</h2>
+      <p>A treasure hunt powered by an RTX 4060 Ti. Dramatic presentation. Real science.</p>
+      <div class="mission-rules">HUMAN AUTHORIZATION → TRUSTED EXECUTION → VERIFIED INTELLIGENCE</div>
+    </div>
+    <span class="mission-stamp">LOCAL ARCHIVE<br>NO FICTIONAL RESULTS</span>
+  </aside>
   <nav class="top-nav" aria-label="Sections">
-    <a class="{{ 'active' if view == 'overview' else '' }}" href="{{ url_for('home', view='overview') }}">Overview</a>
-    <a class="{{ 'active' if view == 'timeline' else '' }}" href="{{ url_for('home', view='timeline') }}">Timeline</a>
-    <a class="{{ 'active' if view == 'performance' else '' }}" href="{{ url_for('home', view='performance') }}">Performance</a>
-    <a class="{{ 'active' if view == 'reliability' else '' }}" href="{{ url_for('home', view='reliability') }}">Reliability</a>
-    <a class="{{ 'active' if view in ['research', 'research_evidence'] else '' }}" href="{{ url_for('research') }}">Research workflow</a>
+    <a class="{{ 'active' if view == 'overview' else '' }}" href="{{ url_for('home', view='overview') }}">{{ label("Overview", "Mission Control") }}</a>
+    <a class="{{ 'active' if view == 'timeline' else '' }}" href="{{ url_for('home', view='timeline') }}">{{ label("Timeline", "Mission Archive") }}</a>
+    <a class="{{ 'active' if view == 'performance' else '' }}" href="{{ url_for('home', view='performance') }}">{{ label("Performance", "The Treasure Vault") }}</a>
+    <a class="{{ 'active' if view == 'reliability' else '' }}" href="{{ url_for('home', view='reliability') }}">{{ label("Reliability", "Signal Integrity") }}</a>
+    <a class="{{ 'active' if view in ['research', 'research_evidence'] else '' }}" href="{{ url_for('research') }}">{{ label("Research workflow", "The Heist") }}</a>
   </nav>
 
   <main>
+    <div class="research-presentation {{ 'has-mission-layout' if view in ['overview', 'timeline', 'performance', 'reliability', 'research'] else '' }}">
     {% if view == 'research' %}{% include 'research_workflow.html' %}{% endif %}
     {% if view == 'research_evidence' %}{% include 'research_evidence.html' %}{% endif %}
     {% if view == 'overview' %}
     <section class="intro">
       <div class="eyebrow">EXPERIMENTAL HISTORY / 2026-10-27</div>
-      <h1>Hypothesis → compiler → measurement.</h1>
+      <h1>{{ label("Hypothesis → compiler → measurement.", "Follow the clues. Verify the treasure.") }}</h1>
       <p>Muse proposed structural strategies and Triton source. Trusted variants were written independently, checked for correctness, and measured with paired CUDA events. The generated kernels remain unevaluated.</p>
     </section>
     <section class="metric-grid" aria-label="Research totals">
@@ -88,7 +106,7 @@
     {% endif %}
 
     {% if view == 'timeline' %}
-    <section class="section-title"><div class="eyebrow">UNIFIED RESEARCH ACTIVITY</div><h1>Research timeline</h1><p>Verified experiments, compiler diagnostics, proposals, and human decisions. Workflow validation replays remain distinct from independent scientific research.</p></section>
+    <section class="section-title"><div class="eyebrow">UNIFIED RESEARCH ACTIVITY</div><h1>{{ label("Research timeline", "Mission History") }}</h1><p>Verified experiments, compiler diagnostics, proposals, and human decisions. Workflow validation replays remain distinct from independent scientific research.</p></section>
     <nav class="top-nav" aria-label="Timeline filters">{% for value, label in timeline_filters.items() %}
       <a class="{{ 'active' if value == timeline_filter else '' }}" {% if value == timeline_filter %}aria-current="page"{% endif %} href="{{ url_for('home', view='timeline', filter=value) }}">{{ label }}</a>
     {% endfor %}</nav>
@@ -97,8 +115,9 @@
       {% for item in timeline_events %}
       <article class="timeline-item" data-activity-id="{{ item.id }}">
         <div class="timeline-rail"><span></span></div>
-        <div class="timeline-content"><div class="timeline-top"><time>{{ item.date_label }}</time>
+        <div class="timeline-content" data-outcome="{{ item.outcome }}" data-workflow-validation="{{ item.workflow_validation|string|lower }}"><div class="timeline-top"><time>{{ item.date_label }}</time>
           <span class="badge {{ 'muted' if item.workflow_validation else 'cyan' }}">{{ item.experiment_type|upper }}</span></div>
+          <p class="mission-caption">{% if item.workflow_validation %}REPLAY THE OPERATION · WORKFLOW VALIDATION{% elif 'compiler_equivalent' in item.outcome %}CIPHER CRACKED · COMPILER EQUIVALENT, RUNTIME UNMEASURED{% elif item.interpretation == 'Screening loss' %}THE TREASURE WAS A DECOY · SCREENING LOSS{% elif item.interpretation == 'Inconclusive' or item.outcome == 'unconfirmed' %}THE TRAIL GOES COLD · INCONCLUSIVE{% elif item.outcome == 'reviewed_and_deferred' %}SEALED FOR NOW · DEFERRED{% elif item.outcome == 'rejected' %}OPERATION DECLINED · REJECTED{% else %}INTELLIGENCE FILE · {{ item.experiment_type|upper }}{% endif %}</p>
           <h2><a href="{{ item.evidence_url }}">{{ item.title }}</a></h2>
           {% if item.workflow_validation %}<p class="measurement-note">Workflow validation — not independent research evidence.</p>{% endif %}
           {% if item.description %}<p>{{ item.description|truncate(260) }}</p>{% endif %}
@@ -117,13 +136,13 @@
     {% endif %}
 
     {% if view == 'performance' %}
-    <section class="section-title"><div class="eyebrow">PAIRED CUDA-EVENT SCREENING</div><h1>Performance evidence</h1><p>Every plotted dot is a saved raw timing sample. Ratios are baseline ÷ candidate. Timing methods are labelled and screening remains unconfirmed.</p></section>
+    <section class="section-title"><div class="eyebrow">PAIRED CUDA-EVENT SCREENING</div><h1>{{ label("Performance evidence", "Mission Debrief") }}</h1><p>Every plotted dot is a saved raw timing sample. Ratios are baseline ÷ candidate. Timing methods are labelled and screening remains unconfirmed.</p></section>
     <section class="panel"><div class="table-wrap"><table><thead><tr><th>Experiment</th><th>Workload</th><th>Method</th><th>Baseline median</th><th>Candidate median</th><th>Paired ratio</th><th>Decision</th></tr></thead><tbody>
       {% for item in performance_events %}{% set measured = item.measurement %}
       <tr><td><a href="{{ item.evidence_url }}">{{ item.title }}</a></td><td>{{ item.shape_mnk|join(' × ') }}</td><td>{{ measured.method }}</td><td>{{ measured.baseline_ms|ms }}</td><td>{{ measured.candidate_ms|ms }}</td><td>{{ measured.median_paired_speedup|ratio }}</td><td><span class="status-pill {{ item.tone }}">{{ item.interpretation }}</span></td></tr>
       {% endfor %}
     </tbody></table></div></section>
-    <p class="subtle">Compiler diagnostics and workflow replays without latency measurements are labeled <b>Not measured</b> in the <a href="{{ url_for('home', view='timeline') }}">Timeline</a>. Absolute measurements remain scoped to their individual runs.</p>
+    <p class="subtle">Compiler diagnostics and workflow replays without latency measurements are labeled <b>Not measured</b> in the <a href="{{ url_for('home', view='timeline') }}">{{ label("Timeline", "Mission History") }}</a>. Absolute measurements remain scoped to their individual runs.</p>
     {% endif %}
 
     {% if view == 'reliability' %}
@@ -259,6 +278,12 @@
 
     {% if activity_warnings %}<details class="panel warnings"><summary>Activity validation warnings</summary><ul>{% for warning in activity_warnings %}<li>{{ warning }}</li>{% endfor %}</ul></details>{% endif %}
     {% if history is defined and history.warnings %}<details class="panel warnings"><summary>{{ history.warnings|length }} artifact warning{{ '' if history.warnings|length == 1 else 's' }}</summary><ul>{% for warning in history.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></details>{% endif %}
+    </div>
+    {% if view in ['overview', 'timeline', 'performance', 'reliability', 'research'] %}
+    <div class="hollywood-experience" data-mission-layout="{{ view }}">{% include 'hollywood/' + view + '.html' %}
+      {% if activity_warnings %}<details class="panel warnings"><summary>Evidence integrity notices</summary><ul>{% for warning in activity_warnings %}<li>{{ warning }}</li>{% endfor %}</ul></details>{% endif %}
+    </div>
+    {% endif %}
   </main>
   <footer>NationalTensor / local artifacts and explicit proposal requests <span>·</span> No generated kernel execution <span>·</span> Screening is not confirmation</footer>
 </div>

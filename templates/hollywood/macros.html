@@ -1,0 +1,27 @@
+{% macro sequence(mission) %}
+<ol class="operation-sequence" aria-label="Recorded workflow sequence">{% for number, name, state in mission.phases %}
+  <li><span>{{ number }}</span><div><b>{{ name }}</b><small>{{ state }}</small></div></li>
+{% endfor %}</ol>
+{% endmacro %}
+
+{% macro dossier(item, compact=false) %}
+<article class="case-file {{ 'compact-case' if compact else '' }}" data-mission-activity="{{ item.id }}" data-classification="{{ item.outcome }}">
+  <div class="case-tab"><span>{{ item.experiment_type }}</span><time>{{ item.date_label }}</time></div>
+  <div class="case-body">
+    {% if item.workflow_validation %}<div class="case-verdict replay">TRAINING HEIST / WORKFLOW VALIDATION</div><h3>The rehearsal is real. The discovery is not new.</h3>
+    {% elif 'compiler_equivalent' in item.outcome %}<div class="case-verdict">COMPILER DIAGNOSTIC</div><h3>The compiler got there first.</h3>
+    {% elif item.interpretation == 'Screening loss' or item.outcome == 'two_stage_screening_loss' %}<div class="case-verdict">NEGATIVE SCREENING</div><h3>The treasure was a decoy.</h3>
+    {% elif item.interpretation == 'Inconclusive' or item.outcome == 'unconfirmed' %}<div class="case-verdict">INCONCLUSIVE / UNCONFIRMED</div><h3>The trail goes cold.</h3>
+    {% elif item.outcome == 'reviewed_and_deferred' %}<div class="case-verdict">REVIEWED & DEFERRED</div><h3>Put this map back in the drawer.</h3>
+    {% elif item.outcome == 'rejected' or item.outcome == 'reviewed_not_approved_for_execution' %}<div class="case-verdict">REVIEW DECISION</div><h3>No signature. No operation.</h3>
+    {% elif item.interpretation == 'Confirmed' %}<div class="case-verdict">CONFIRMED PERFORMANCE EVIDENCE</div><h3>We found it. The missing cycles.</h3>
+    {% else %}<div class="case-verdict">RECORDED INTELLIGENCE</div><h3>Another clue enters the file.</h3>{% endif %}
+    <h4><a href="{{ item.evidence_url }}">{{ item.title }}</a></h4>
+    <p>{{ item.interpretation or item.description or 'Inspect the saved record for the scope of this evidence.' }}</p>
+    <div class="case-facts"><span>{{ item.outcome|replace('_', ' ') }}</span><span>{{ item.measurement_label }}</span>{% if item.correctness %}<span>Correctness: {{ item.correctness }}</span>{% endif %}</div>
+    {% if item.workflow_validation %}<p class="replay-note">Replay only. Not independent research evidence or additional confirmation.</p>{% endif %}
+    {% if not compact and item.description %}<details><summary>Technical briefing</summary><p>{{ item.description }}</p><p class="path">{{ item.artifact_path }}</p></details>{% endif %}
+    <a class="case-link" href="{{ item.evidence_url }}">Open evidence dossier ↗</a>
+  </div>
+</article>
+{% endmacro %}

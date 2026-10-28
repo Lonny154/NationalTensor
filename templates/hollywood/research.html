@@ -1,0 +1,15 @@
+{% from 'hollywood/macros.html' import sequence %}
+<div class="mission-kicker"><span>NT / HUMAN AUTHORIZATION REQUIRED</span><span>THE HEIST · TRUSTED DIAGNOSTIC ONLY</span></div>
+<section class="heist-heading"><div><div class="eyebrow">MISSION BRIEFING / SAVED MUSE ADVISORY</div><h1>{{ mission.title }}</h1><p>{{ mission.narrative }}</p></div><a class="mission-cta" href="#{{ mission.anchor }}">{{ mission.action }} ↓</a></section>
+{{ sequence(mission) }}
+<div class="heist-board">
+  <section class="heist-brief"><span class="file-number">THE TARGET</span><h2>{{ workflow_plan.plan.research_question if workflow_plan else 'No advisory plan selected.' }}</h2>
+    {% if workflow_plan %}<p>{{ workflow_plan.plan.technical_hypothesis }}</p><dl><dt>Proposed mechanism</dt><dd>{{ workflow_plan.plan.optimization_mechanism }}</dd><dt>Fixed workload</dt><dd>{{ workflow_plan.plan.target_shape_mnk|join(' × ') }} FP16</dd><dt>Plan SHA-256</dt><dd class="hash">{{ workflow_plan.plan_sha256 }}</dd></dl>{% endif %}
+    <p class="replay-note">This runner replays a compiler diagnostic for workflow validation. Runtime screening is excluded. A dramatic entrance cannot create independent research evidence.</p>
+  </section>
+  <aside class="authorization-console" id="authorization"><span class="file-number">THE HUMAN KEY</span><h2>Sign before stealing cycles.</h2><p>Approval binds the saved plan, fixed runner, source hashes, workload, and allowed phases. Execution is a second, separate action. Nobody gets to improvise Python during the chase.</p><div data-hollywood-slot="authorization"></div>{% if not workflow_plan %}<p>No plan is available for authorization.</p>{% endif %}</aside>
+  <section class="intelligence-desk"><span class="file-number">THE EVIDENCE BOARD</span><h2>Read the fine print on the treasure map.</h2><p>These citations are checked against saved research memory. A hypothesis is a clue, not a result.</p><div data-hollywood-slot="intelligence"></div></section>
+  <aside class="planning-desk" id="planning"><span class="file-number">THE MAP ROOM</span><p>Ask only when you mean it. A new advisory never starts execution.</p><div data-hollywood-slot="planning"></div></aside>
+</div>
+<section class="dispatch-desk" id="dispatch"><div class="eyebrow">LIVE DISPATCH / PERSISTED JOB STATES</div><h2>The GPU does not work on movie time.</h2><p>Queued, running, validating, completed, or failed: the status comes from the real job record. No theatrical completion percentage is provided.</p><div data-hollywood-slot="dispatch"></div></section>
+{% if workflow_warnings %}<details class="panel warnings"><summary>Intelligence integrity notices</summary><ul>{% for warning in workflow_warnings %}<li>{{ warning }}</li>{% endfor %}</ul></details>{% endif %}

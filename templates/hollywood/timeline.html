@@ -1,0 +1,6 @@
+{% from 'hollywood/macros.html' import dossier %}
+<div class="mission-kicker"><span>NT / RECORDS ROOM</span><span>{{ timeline_events|length }} VERIFIED FILES IN THIS VIEW</span></div>
+<section class="archive-heading"><div><div class="eyebrow">MISSION ARCHIVE</div><h1>Every clue.<br>Including the bad ones.</h1></div><p>Dead ends stay in the file. Rejected plans keep their paperwork. Rehearsals do not get promoted to discoveries just because the lighting improved.</p></section>
+<nav class="archive-filters" aria-label="Mission archive filters">{% for value, filter_label in timeline_filters.items() %}<a {% if value == timeline_filter %}aria-current="page"{% endif %} href="{{ url_for('home', view='timeline', filter=value) }}">{{ filter_label }}</a>{% endfor %}</nav>
+<div class="dossier-grid archive-grid">{% for item in timeline_events %}{{ dossier(item) }}{% else %}<p>No verified files match this filter.</p>{% endfor %}</div>
+<p class="cinema-footnote">Newest first. Screening remains screening; confirmation remains confirmation. Compiler equivalence establishes no measured runtime equivalence.</p>

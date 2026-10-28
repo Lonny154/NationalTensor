@@ -20,6 +20,47 @@ Install the small web dependency in the repository environment, then launch:
 
 Open `http://127.0.0.1:8501/`. Stop with Ctrl-C.
 
+The shared **Research Mode / Hollywood Mode** switch changes presentation in
+place. Hollywood Mode v2 uses dedicated layouts, not the Research Mode panel
+arrangement: Mission Control has a briefing/action split and recorded workflow
+sequence; Mission Archive uses dossiers with all five filters; the Treasure
+Vault uses paired-ratio receipts with latencies and recorded MAD/A/A variability;
+Signal Integrity uses calibration investigation files and settling condition
+reports; the Heist uses a target/evidence board and authorization/dispatch desks.
+The theatrical copy is presentation, and scientific classifications remain
+explicit. Both modes use the same protected forms and validated evidence.
+Approval and execution remain separate. No percentages or performance gains
+are simulated. Active job animations reflect only saved queued/running/validating
+states and stop under reduced-motion preferences.
+
+The preference is saved in browser local storage for this origin; switching
+does not navigate, submit forms, change selections, or reset jobs or approvals.
+If storage is unavailable the current page still switches, but reloads default
+to Research Mode. JavaScript is required for Hollywood Mode. Research Mode
+remains the default. Use the Timeline filters in either mode; workflow replays
+remain explicitly distinct from independent research evidence.
+
+The Heist moves the original workflow controls and polling node into dedicated
+slots, then restores them when returning to Research Mode. It never clones
+forms, changes their fields, or adds an execution endpoint. Mission Control's
+next-action link navigates to the appropriate review/dispatch desk. Its phase
+sequence describes persisted records, not a progress estimate. A completed job
+is described as verified only when its validated memory entry is present.
+Detailed scientific evidence pages continue to use the existing evidence summary.
+
+CPU tests: `.venv/bin/python -m pytest -q tests/test_hollywood_mode.py tests/test_hollywood_layouts.py`.
+Optional Chromium visual smoke (isolated fixtures, GPU executor blocked):
+`NT_HOLLYWOOD_BROWSER=chromium .venv/bin/python -m pytest -q tests/test_hollywood_mode.py tests/test_hollywood_layouts.py -k browser`.
+V2 screenshots, including side-by-side Overview, Reliability, and Workflow
+comparisons, are saved under `evaluations/dashboard-previews/hollywood-v2/`
+(override with `NT_HOLLYWOOD_V2_SCREENSHOTS`). V1 preference smoke screenshots
+use `hollywood-v1/` (override `NT_HOLLYWOOD_SCREENSHOTS`). Browser layout tests
+check switching, original form-node identity, selected plan and job-snapshot
+preservation, persistent preference, and zero POST requests. The separate
+`NT_APPROVAL_BROWSER=chromium` test in `test_research_workflow.py` submits the
+native form from Hollywood Mode against isolated fixtures and verifies CSRF,
+Origin, approval-only behavior, and no GPU execution.
+
 For a live proposal, place `MODEL_API_KEY` in the server environment or the
 repository `.env` file, launch the dashboard, open the Overview page, and
 click **Request one hypothesis** once. The fixed request uses

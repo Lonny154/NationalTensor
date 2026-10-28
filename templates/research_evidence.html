@@ -2,7 +2,7 @@
 {% set diagnostic = evidence.diagnostic %}
 <section class="section-title">
   <a class="text-link back-link" href="{{ url_for('research') }}">← Research workflow</a>
-  <div class="eyebrow">VERIFIED MEMORY EVIDENCE</div>
+  <div class="eyebrow">{{ label("VERIFIED MEMORY EVIDENCE", "CLASSIFIED INTELLIGENCE / MISSION DEBRIEF") }}</div>
   <h1>{{ evidence.question or 'Research evidence' }}</h1>
   <p class="path">{{ workflow_entry.id }}</p>
   {% if evidence.workflow_validation %}
@@ -40,7 +40,7 @@
       {% for check in evidence.checks %}<tr><td>{{ check.implementation|capitalize }}</td><td>{{ check.seed }}</td><td>{{ check.status }}</td></tr>{% endfor %}
     </tbody></table></div>{% else %}<p>Per-case records are not available in this summary.</p>{% endif %}
   </section>
-  <section class="panel"><div class="panel-head"><h2>Compiler resource comparison</h2></div>
+  <section class="panel"><div class="panel-head"><h2>{{ label("Compiler resource comparison", "Crack the Cipher") }}</h2></div>
     {% if evidence.resources %}<div class="table-wrap"><table><thead><tr><th>Resource</th>{% for name in evidence.resources %}<th>{{ name|replace('_', ' ')|capitalize }}</th>{% endfor %}</tr></thead><tbody>
       {% for key, label in [('registers_per_thread', 'Registers / thread'), ('shared_memory_bytes', 'Shared memory / block (bytes)'), ('spills', 'Compiler spills')] %}
       <tr><td>{{ label }}</td>{% for values in evidence.resources.values() %}<td>{{ values.get(key) if values.get(key) is not none else 'Not recorded' }}</td>{% endfor %}</tr>
