@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "status": "completed_advisory_decision",
+  "direction_status": "reviewed_and_deferred",
+  "completed_date": "2026-10-28",
+  "plan_run_id": "20261028T144337265266Z",
+  "plan_sha256": "c8d37b1eae39f9a5ecb716892829e97c644fc01590b08e42b34f0e0bbdd3c257",
+  "scope": {
+    "schedule": "grouped_m4",
+    "shape_mnk": [512, 3072, 768],
+    "dtype": "fp16",
+    "numeric_config": {"block_m": 64, "block_n": 128, "block_k": 32, "num_warps": 4, "num_stages": 3}
+  },
+  "reason": "Accepted advisory decision to defer identical grouped-M4 FC1 retesting after three unconfirmed confirmations and human review. Select a distinct unresolved research question from verified memory.",
+  "execution_approved": false,
+  "future_controlled_replication_allowed": true,
+  "family_wide_rejection": false,
+  "evidence_snapshot": [
+    {
+      "id": "structural:20261027T141453253695Z:1",
+      "artifact_path": "evaluations/structural-loop/20261027T141453253695Z/experiments.jsonl",
+      "sha256": "f852a62800623c5a4e0564648b62c1ad83893d5645cf1fc32cb7900ffdf9de53"
+    },
+    {
+      "id": "grouped_m4:confirmation_history",
+      "artifact_path": "docs/research_reviews/grouped_cta_003.json",
+      "sha256": "44fdf0d20485762377f7d0f82fe4db58b3d207bd9dc802083e4a0e996069f971"
+    }
+  ]
+}

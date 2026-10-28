@@ -14,11 +14,13 @@ from dashboard_data import load_history
 from dashboard_proposals import _context as dashboard_request_context
 import experiment_memory as memory
 import kernel_evolution
+import stage_reduction_memory
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TWO_SLAB = "kernel:20261027T160014125560Z"
 TRUSTED_TWO_SLAB = "trusted:trusted-two-slab:20261027T161358957319Z"
+STAGE_REDUCTION = "stage_reduction:20261028T140056186673Z"
 K_BOUND = "kernel:20261027T163630745455Z"
 
 
@@ -50,6 +52,22 @@ class ExperimentMemoryTests(unittest.TestCase):
         self.assertEqual(trusted["performance_interpretation"], "Screening loss")
         self.assertEqual(trusted["provenance"],
                          "model_suggested_human_reviewed_implementation")
+        tuned = by_id[STAGE_REDUCTION]
+        self.assertEqual(tuned["correctness_cases"], [12, 12])
+        self.assertEqual(tuned["outcome"], "two_stage_screening_loss")
+        self.assertEqual(tuned["confirmation"], "not confirmed")
+        self.assertAlmostEqual(tuned["screening"]["median_paired_speedup"],
+                               0.951883129051782)
+        self.assertLess(tuned["compiler"]["resources"]["stages_2"]
+                        ["shared_memory_bytes"],
+                        tuned["compiler"]["resources"]["stages_3"]
+                        ["shared_memory_bytes"])
+        profile = tuned["profiling_evidence"]
+        self.assertGreater(profile["metrics"]["stages_2"]
+                           ["sm__maximum_warps_per_active_cycle_pct"],
+                           profile["metrics"]["stages_3"]
+                           ["sm__maximum_warps_per_active_cycle_pct"])
+        self.assertIn("not a causal", profile["interpretation"])
 
     def test_family_comparison_exact_related_and_structure_hint(self):
         remembered = memory.reconstruct(ROOT)
@@ -93,6 +111,22 @@ class ExperimentMemoryTests(unittest.TestCase):
             source="x=1\n", shape=(512, 3072, 768), gpu="GPU")
         self.assertIsNone(ambiguous["exact_duplicate_of"])
         self.assertTrue(ambiguous["related"][0]["source_structure_match"])
+
+    def test_stage_reduction_memory_rejects_tampered_identity(self):
+        original_read = stage_reduction_memory._read
+
+        def altered(root, relative):
+            raw = original_read(root, relative)
+            if relative == stage_reduction_memory.ARTIFACT:
+                value = json.loads(raw)
+                value["plan_sha256"] = "0" * 64
+                return json.dumps(value).encode()
+            return raw
+
+        with patch("stage_reduction_memory._read", side_effect=altered):
+            entry, warnings = stage_reduction_memory.load(ROOT)
+        self.assertIsNone(entry)
+        self.assertTrue(any("identity mismatch" in warning for warning in warnings))
 
     def test_k_bound_is_primary_with_mask_hoisting_secondary(self):
         remembered = memory.reconstruct(ROOT)

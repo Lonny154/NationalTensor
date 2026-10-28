@@ -16,9 +16,12 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, ses
 from dashboard_data import ROOT, load_compiler_detail, load_history
 from dashboard_interpretation import decorate_history
 from dashboard_proposals import ProposalManager
+from dashboard_evidence import evidence_summary
+from dashboard_timeline import build_activity, filter_events, FILTERS as TIMELINE_FILTERS
 import experiment_memory
 from experiment_planner import load_saved_plans
 from kernel_evolution import MODEL as PROPOSAL_MODEL
+from research_workflow import WorkflowManager, RUNNER_ID, binding
 
 
 ALLOWED_HOSTS = {"127.0.0.1", "127.0.0.1:8501", "localhost", "localhost:8501"}
@@ -142,9 +145,11 @@ def _prompt_evidence(selected: dict, records: dict) -> dict:
                 and not selected.get("feedback_link")}
 
 
-def _planner_references(saved_plan: dict, history: dict, records: dict) -> list[dict]:
+def _planner_references(saved_plan: dict, history: dict, records: dict, memory_snapshot=None) -> list[dict]:
     """Resolve cited evidence against current, verified experiment memory."""
     memory = {row["id"]: row for row in experiment_memory.from_history(history)["entries"]}
+    if memory_snapshot is not None:
+        memory.update({row["id"]: row for row in memory_snapshot["entries"]})
     provenance = {row["id"]: row for row in saved_plan["evidence_provenance"]}
     results = []
     for ref in saved_plan["plan"].get("supporting_evidence", []):
@@ -153,13 +158,14 @@ def _planner_references(saved_plan: dict, history: dict, records: dict) -> list[
         entry = memory.get(ref.get("id")) if isinstance(ref.get("id"), str) else None
         recorded = provenance.get(ref.get("id")) if isinstance(ref.get("id"), str) else None
         verified = bool(entry and entry.get("artifact_path") == ref.get("artifact_path")
-                        and ref["id"] in records and recorded
+                        and recorded
                         and recorded.get("original_muse_source_sha256")
                         == entry.get("original_muse_source_sha256")
                         and recorded.get("trusted_implementation_sha256")
                         == entry.get("trusted_implementation_sha256"))
         results.append({"id": ref["id"] if verified else None,
-                        "label": records[ref["id"]]["label"] if verified else "Evidence unavailable",
+                        "label": records.get(ref["id"], {}).get("label", ref["id"]) if verified else "Evidence unavailable",
+                        "timeline_record": ref.get("id") in records,
                         "artifact_path": ref.get("artifact_path"),
                         "why_relevant": ref.get("why_relevant"),
                         "verified": verified,
@@ -182,7 +188,9 @@ def create_app(root: Path = ROOT) -> Flask:
                       SESSION_COOKIE_SAMESITE="Strict")
     root = Path(root).resolve()
     proposals = ProposalManager(root)
+    workflow = WorkflowManager(root)
     app.extensions["proposal_manager"] = proposals
+    app.extensions["research_workflow"] = workflow
     app.jinja_env.filters["ms"] = _fmt_ms
     app.jinja_env.filters["ratio"] = _fmt_ratio
     app.jinja_env.filters["pct"] = _fmt_pct
@@ -207,7 +215,9 @@ def create_app(root: Path = ROOT) -> Flask:
     def protect(response):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
+        # Native POST forms under no-referrer send Origin: null in Chromium.
+        # Preserve same-origin submissions; cross-origin referrers remain suppressed.
+        response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; style-src 'self'; script-src 'self'; "
             "connect-src 'self'; img-src 'self'; "
@@ -229,6 +239,109 @@ def create_app(root: Path = ROOT) -> Flask:
         snapshot["detail_url"] = (url_for("experiment_detail", experiment_id=experiment)
                                   if experiment else None)
         return jsonify(snapshot)
+
+    @app.get("/api/research/status")
+    def research_status():
+        workflow.recover()
+        return jsonify(planning=workflow.planning_status(), jobs=workflow.jobs())
+
+    def activity_links(rows):
+        linked = []
+        for row in rows:
+            evidence = row["evidence"]
+            if evidence["kind"] == "experiment":
+                link = url_for("experiment_detail", experiment_id=evidence["id"])
+            elif evidence["kind"] == "plan":
+                link = url_for("research", plan=evidence["id"])
+            elif evidence["kind"] == "job":
+                link = url_for("research_log", job_id=evidence["id"], name="job.json")
+            else:
+                link = url_for("research_evidence", evidence_id=evidence["id"])
+            linked.append({**row, "evidence_url": link})
+        return linked
+
+    @app.get("/api/research/timeline")
+    def research_timeline():
+        selected_filter = request.args.get("filter", "all")
+        if selected_filter not in TIMELINE_FILTERS:
+            abort(400)
+        activity = build_activity(root)
+        return jsonify(events=activity_links(filter_events(activity["events"], selected_filter)),
+                       filters=activity["filters"], warnings=activity["warnings"])
+
+    @app.post("/research/advisory")
+    def request_advisory():
+        try:
+            workflow.request_advisory()
+        except ValueError as exc:
+            return str(exc), 409
+        return redirect(url_for("research"), code=303)
+
+    @app.post("/research/plans/<run_id>/<action>")
+    def research_action(run_id, action):
+        try:
+            if action == "approve":
+                workflow.decide(run_id, "approved")
+            elif action == "reject":
+                workflow.decide(run_id, "rejected")
+            elif action == "execute":
+                workflow.start_job(run_id)
+            else:
+                abort(404)
+        except (ValueError, OSError) as exc:
+            return str(exc), 409
+        return redirect(url_for("research", plan=run_id), code=303)
+
+    @app.get("/research")
+    def research():
+        workflow.recover()
+        plans, warnings = load_saved_plans(root)
+        chosen = request.args.get("plan")
+        selected_plan = next((row for row in plans if row["run_id"] == chosen), None) if chosen else (plans[-1] if plans else None)
+        if chosen and selected_plan is None:
+            abort(404)
+        review, eligibility, blocked = None, None, None
+        if selected_plan:
+            try:
+                review = workflow.review(selected_plan["run_id"])
+                eligibility = binding(root, selected_plan["run_id"])
+                if review and review["decision"] == "approved" and review["binding"] != eligibility:
+                    blocked = "Approval identity changed. Execution is blocked."
+            except (ValueError, OSError) as exc:
+                blocked = str(exc)
+        memory = experiment_memory.reconstruct(root)
+        history = load_history(root)
+        records = {row["id"]: row for row in history["timeline"]}
+        evidence = _planner_references(selected_plan, history, records, memory) if selected_plan else []
+        if "csrf_token" not in session:
+            session["csrf_token"] = secrets.token_urlsafe(32)
+        state = {"planning": workflow.planning_status(), "jobs": workflow.jobs()}
+        return render_template("dashboard.html", view="research", csrf_token=session["csrf_token"],
+            workflow_plans=plans, workflow_plan=selected_plan, workflow_review=review,
+            workflow_binding=eligibility, workflow_blocked=blocked, workflow_evidence=evidence,
+            workflow_state=state, workflow_warnings=warnings + memory["warnings"],
+            workflow_runner=RUNNER_ID)
+
+    @app.get("/research/evidence/<path:evidence_id>")
+    def research_evidence(evidence_id):
+        memory = experiment_memory.reconstruct(root)
+        entry = next((row for row in memory["entries"] if row["id"] == evidence_id), None)
+        if entry is None:
+            abort(404)
+        return render_template("dashboard.html", view="research_evidence", workflow_entry=entry,
+                               evidence_summary=evidence_summary(root, entry))
+
+    @app.get("/research/jobs/<job_id>/<name>")
+    def research_log(job_id, name):
+        from research_workflow import JOB_ID, SECTION
+        from grouped_confirmation_memory import _read
+        if not JOB_ID.fullmatch(job_id) or name not in {"stdout.log", "stderr.log", "job.json"}:
+            abort(404)
+        try:
+            raw = _read(root, f"{SECTION}/jobs/{job_id}/{name}")
+        except (OSError, ValueError):
+            abort(404)
+        return app.response_class(raw, mimetype="text/plain")
 
     @app.get("/")
     def home():
@@ -255,10 +368,14 @@ def create_app(root: Path = ROOT) -> Flask:
         if "csrf_token" not in session:
             session["csrf_token"] = secrets.token_urlsafe(32)
         history = decorate_history(load_history(root))
+        selected_filter = request.args.get("filter", "all")
+        if view == "timeline" and selected_filter not in TIMELINE_FILTERS:
+            abort(400)
+        activity = build_activity(root, history=history) if view in {"timeline", "performance"} else None
         records = {item["id"]: item for item in history["timeline"]}
         plans, planner_warnings = load_saved_plans(root)
         latest_plan = plans[-1] if plans else None
-        plan_references = (_planner_references(latest_plan, history, records)
+        plan_references = (_planner_references(latest_plan, history, records, experiment_memory.reconstruct(root))
                            if latest_plan and view == "overview" else [])
         selected = records.get(selected_id) if selected_id else None
         if selected_id and selected is None:
@@ -309,6 +426,10 @@ def create_app(root: Path = ROOT) -> Flask:
             mechanism_secondary=mechanism_secondary,
             latest_plan=latest_plan, plan_references=plan_references,
             planner_warnings=planner_warnings,
+            timeline_events=activity_links(filter_events(activity["events"], selected_filter)) if view == "timeline" else [],
+            timeline_filters=TIMELINE_FILTERS, timeline_filter=selected_filter,
+            activity_warnings=activity["warnings"] if activity else [],
+            performance_events=activity_links(activity["performance"]) if activity else [],
             csrf_token=session["csrf_token"], proposal_model=PROPOSAL_MODEL)
 
     return app

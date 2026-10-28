@@ -4,8 +4,9 @@ The dashboard reads the checkpointed files under `evaluations/` and
 `docs/day2_checkpoint.md`. An explicit **Request one hypothesis** action can
 call Muse and write a new proposal under `evaluations/kernel-evolution/`.
 The Overview page also displays the latest saved advisory research plan from
-`evaluations/experiment-planner/`, if one exists; [the planner CLI](experiment_planner.md)
-is a separate explicit action.
+`evaluations/experiment-planner/`, if one exists. The separate
+[Research workflow](research_workflow.md) tab exposes advisory planning, human
+review, and one registered trusted compiler-diagnostic runner.
 The server binds to `127.0.0.1` with debug mode disabled. Generated source and
 model text are displayed through Flask's escaped templates; they are never
 imported, compiled, approved, or executed.
@@ -35,6 +36,33 @@ Its **Back to Timeline** link returns to the chronological list. Older
 `/?view=timeline&experiment=...` links redirect to the detail URL when the
 experiment ID is valid and present.
 
+The Timeline now projects all verified research activity from reconstructed
+experiment memory, saved advisory plans, and existing review/job records.
+`dashboard_timeline.py` creates display events on each read; it stores no second
+history or cache. Each event preserves its recorded outcome and links to the
+existing experiment, memory-evidence, plan-review, or job-record page.
+
+Filters are All activity, Scientific experiments, Compiler diagnostics,
+Research decisions, and Workflow validation. The scientific filter excludes
+workflow replays. The compiler filter includes genuine compiler diagnostics
+and diagnostic replays, with the latter visibly labeled as workflow validation.
+Proposals, human reviews, and completed deferrals belong to Research decisions.
+Date-only review records explicitly state that the time was not recorded.
+
+The Performance table uses only recorded latency medians and paired ratios,
+with each comparison scoped to its own run. Compiler diagnostics and replays
+without timings appear as **Not measured** in the Timeline. Existing screening,
+inconclusive, negative, and confirmation classifications are preserved.
+Hash-invalid artifacts and inconsistent timing records are omitted with a
+validation warning. Legacy structural files retain their existing source-hash
+and internal timing-consistency checks; no retrospective signed manifests are
+created for those files.
+
+`GET /api/research/timeline?filter=all` exposes the same renderer-neutral event
+data and evidence links. The other filter keys are `scientific`, `compiler`,
+`decisions`, and `workflow`. This projection can support a future Mission
+History view; no Hollywood Mode is implemented here.
+
 Only one request runs at a time in the server process. The five states are
 Ready, Requesting proposal, Validating response, Saved for review, and Failed.
 If a response fails static review or an API call fails, the server reports a
@@ -42,8 +70,9 @@ generic failure without exception text; any received response and rejection
 remain in the proposal audit file. The action requires a session CSRF token,
 an exact loopback Host and matching HTTP Origin. Requests have a 1 KiB body
 limit. The app has no CORS allowance, uses a strict content security policy,
-and sends no credentials to the browser. It still has no GPU evaluation path;
-human approval and isolated execution remain separate workflows.
+and sends no credentials to the browser. The separate controlled research
+workflow has one explicit approval and execution path for trusted code; the
+generated-source proposal action never launches GPU work.
 
 ## Experiment memory
 

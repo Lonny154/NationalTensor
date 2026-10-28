@@ -251,6 +251,35 @@ def reconstruct(root: Path = ROOT) -> dict:
     report, warnings = load_verified_report(root)
     memory = from_history(load_history(root), profile_reports=[report] if report else ())
     memory["warnings"].extend(warnings)
+    from stage_reduction_memory import load as load_stage_reduction
+    stage_entry, stage_warnings = load_stage_reduction(root)
+    if stage_entry:
+        stage_entry["primary_family"] = stage_entry["families"][0]
+        stage_entry["secondary_families"] = stage_entry["families"][1:]
+        memory["entries"].append(stage_entry)
+        memory["entries"].sort(key=lambda item: (item["created_utc"], item["id"]))
+    memory["warnings"].extend(stage_warnings)
+    from grouped_confirmation_memory import load as load_grouped_confirmations
+    grouped_entry, grouped_warnings = load_grouped_confirmations(root)
+    if grouped_entry:
+        memory["entries"].append(grouped_entry)
+        memory["entries"].sort(key=lambda item: (item["created_utc"], item["id"]))
+    memory["warnings"].extend(grouped_warnings)
+    from mask_hoisting_memory import load as load_mask_diagnostic
+    diagnostic_entry, diagnostic_warnings = load_mask_diagnostic(root)
+    if diagnostic_entry:
+        memory["entries"].append(diagnostic_entry)
+        memory["entries"].sort(key=lambda item: (item["created_utc"], item["id"]))
+    memory["warnings"].extend(diagnostic_warnings)
+    from workflow_artifacts import load_completed as load_workflow_results
+    workflow_entries, workflow_warnings = load_workflow_results(root)
+    memory["entries"].extend(workflow_entries)
+    memory["entries"].sort(key=lambda item: (item["created_utc"], item["id"]))
+    memory["warnings"].extend(workflow_warnings)
+    from advisory_decisions import load as load_completed_decisions
+    decisions, decision_warnings = load_completed_decisions(root, memory["entries"])
+    memory["completed_advisory_decisions"] = decisions
+    memory["warnings"].extend(decision_warnings)
     return memory
 
 
@@ -296,6 +325,8 @@ def retrieve(memory: dict, *, shape, dtype, gpu, method, baseline_sha256=None,
     """Return bounded evidence summaries; no source or raw compiler files."""
     candidates = []
     for entry in memory["entries"]:
+        if entry.get("workflow_validation"):
+            continue  # Replay verifies the workflow, not an additional independent research result.
         if entry["id"] == exclude_id:
             continue
         match = compatibility(entry, shape=shape, dtype=dtype, gpu=gpu,
@@ -304,7 +335,10 @@ def retrieve(memory: dict, *, shape, dtype, gpu, method, baseline_sha256=None,
                               numeric_config=numeric_config)
         score = (100 * (match["workload"] == "same")
                  + 30 * (match["gpu"] == "same")
-                 + 90 * (entry["kind"] == "profiling_study")
+                 + 95 * (entry["kind"] == "profiling_study")
+                 + 80 * (entry["kind"] == "numeric_tuning_screening")
+                 + 80 * (entry["kind"] == "compiler_diagnostic")
+                 + 75 * (entry["kind"] == "confirmation_history")
                  + 45 * (entry["kind"] == "trusted_implementation")
                  + 30 * (entry["kind"] == "reviewed_structural_strategy")
                  + 15 * bool(set(entry["families"]) & set(anchor_families))
@@ -328,8 +362,12 @@ def retrieve(memory: dict, *, shape, dtype, gpu, method, baseline_sha256=None,
             "trusted_implementation_sha256": entry["trusted_implementation_sha256"],
             "correctness": entry["correctness"], "compilation": entry["compilation"],
             "confirmation": entry["confirmation"], "outcome": entry["outcome"],
+            "confirmation_evidence": entry.get("confirmation_evidence"),
+            "review_status": entry.get("review_status"),
+            "diagnostic_evidence": entry.get("diagnostic_evidence"),
             "performance_interpretation": entry["performance_interpretation"],
             "screening": screening, "compatibility": match,
+            "candidate_configuration": entry.get("candidate_configuration"),
             "compiler_evidence": {key: str(review[key])[:220]
                                   for key in ("ttir", "ttgir", "ptx", "sass", "resources")
                                   if key in review and isinstance(review[key], str)},

@@ -74,3 +74,21 @@
 
   refresh();
 })();
+
+(() => {
+  const panel = document.getElementById("workflow-status");
+  if (!panel) return;
+  const initial = JSON.parse(panel.dataset.snapshot);
+  const active = data => data.planning.status === "requesting" || data.jobs.some(job => ["queued", "running", "validating"].includes(job.status));
+  const state = data => JSON.stringify([data.planning.status, data.jobs.map(job => [job.id, job.status])]);
+  if (!active(initial)) return;
+  const timer = window.setInterval(async () => {
+    try {
+      const response = await fetch(panel.dataset.statusUrl, {cache: "no-store"});
+      if (!response.ok) throw new Error("status unavailable");
+      const current = await response.json();
+      if (state(current) !== state(initial)) window.location.reload();
+      if (!active(current)) window.clearInterval(timer);
+    } catch (_) { window.clearInterval(timer); }
+  }, 1500);
+})();

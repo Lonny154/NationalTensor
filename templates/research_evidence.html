@@ -1,0 +1,79 @@
+{% set evidence = evidence_summary %}
+{% set diagnostic = evidence.diagnostic %}
+<section class="section-title">
+  <a class="text-link back-link" href="{{ url_for('research') }}">← Research workflow</a>
+  <div class="eyebrow">VERIFIED MEMORY EVIDENCE</div>
+  <h1>{{ evidence.question or 'Research evidence' }}</h1>
+  <p class="path">{{ workflow_entry.id }}</p>
+  {% if evidence.workflow_validation %}
+  <div class="callout"><b>Workflow validation — not independent research evidence</b>
+    <p>This run checks the controlled workflow by replaying an existing experiment. It does not count as a new independent research result or additional performance confirmation.</p></div>
+  {% elif evidence.independent == true %}<span class="badge cyan">INDEPENDENT RESEARCH EVIDENCE</span>
+  {% else %}<span class="badge muted">SAVED RESEARCH EVIDENCE</span>{% endif %}
+</section>
+<div class="two-column">
+  <section class="panel"><div class="panel-head"><h2>Original Muse hypothesis</h2><span class="badge cyan">HYPOTHESIS</span></div>
+    <p>{{ evidence.hypothesis or 'Not recorded.' }}</p>
+    <dl class="facts"><dt>Mechanism</dt><dd>{{ evidence.mechanism or 'Not recorded.' }}</dd>
+      <dt>Workload</dt><dd>{{ workflow_entry.shape_mnk|join(' × ') }} {{ workflow_entry.dtype|upper }}</dd>
+      <dt>GPU</dt><dd>{{ workflow_entry.gpu or 'Not recorded.' }}</dd>
+      {% if workflow_entry.configuration %}<dt>Configuration</dt><dd>{% for name, value in workflow_entry.configuration.items() %}<span class="chip">{{ name|replace('_', ' ') }}: {{ value }}</span>{% endfor %}</dd>{% endif %}
+    </dl>
+    {% if evidence.plan %}<p class="subtle">Saved advisory {{ evidence.plan.run_id }} · {{ evidence.plan.model }}</p>{% endif %}
+  </section>
+  <section class="panel"><div class="panel-head"><h2>Approval and execution</h2>
+    <span class="status-pill {{ 'pass' if evidence.job and evidence.job.status == 'completed' else 'neutral' }}">{{ evidence.job.status|capitalize if evidence.job else 'Saved evidence' }}</span></div>
+    <dl class="facts"><dt>Human approval</dt><dd>{{ evidence.approval.decision|capitalize if evidence.approval else 'No approval record linked to this evidence.' }}</dd>
+      {% if evidence.approval %}<dt>Reviewed by</dt><dd>{{ evidence.approval.reviewed_by }}</dd><dt>Reviewed at</dt><dd>{{ evidence.approval.reviewed_at }}</dd>
+      <dt>Approved phases</dt><dd>{{ evidence.approval.binding.phases|join(', ')|replace('_', ' ') }}</dd>{% endif %}
+      <dt>Execution</dt><dd>{{ evidence.job.status|capitalize if evidence.job else workflow_entry.compilation }}</dd>
+      {% if evidence.job %}<dt>Started</dt><dd>{{ evidence.job.started_utc or 'Not recorded.' }}</dd><dt>Finished</dt><dd>{{ evidence.job.finished_utc or 'Not recorded.' }}</dd>{% endif %}
+    </dl>
+    {% if evidence.job %}<p><a href="{{ url_for('research_log', job_id=evidence.job.id, name='job.json') }}">Job record</a> · <a href="{{ url_for('research_log', job_id=evidence.job.id, name='stdout.log') }}">Execution log</a> · <a href="{{ url_for('research_log', job_id=evidence.job.id, name='stderr.log') }}">Error log</a></p>{% endif %}
+  </section>
+</div>
+<div class="two-column">
+  <section class="panel"><div class="panel-head"><h2>GPU correctness</h2><span class="status-pill {{ 'pass' if workflow_entry.correctness == 'PASS' else 'neutral' }}">{{ workflow_entry.correctness }}</span></div>
+    {% if evidence.correctness_cases %}<p><b>{{ evidence.correctness_cases[0] }}/{{ evidence.correctness_cases[1] }} checks passed.</b></p>{% endif %}
+    {% if evidence.tolerances %}<p class="subtle">Existing FP16 reference policy · rtol={{ evidence.tolerances.rtol }}, atol={{ evidence.tolerances.atol }}</p>{% endif %}
+    {% if evidence.checks %}<div class="table-wrap"><table><thead><tr><th>Implementation</th><th>Seed</th><th>Result</th></tr></thead><tbody>
+      {% for check in evidence.checks %}<tr><td>{{ check.implementation|capitalize }}</td><td>{{ check.seed }}</td><td>{{ check.status }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p>Per-case records are not available in this summary.</p>{% endif %}
+  </section>
+  <section class="panel"><div class="panel-head"><h2>Compiler resource comparison</h2></div>
+    {% if evidence.resources %}<div class="table-wrap"><table><thead><tr><th>Resource</th>{% for name in evidence.resources %}<th>{{ name|replace('_', ' ')|capitalize }}</th>{% endfor %}</tr></thead><tbody>
+      {% for key, label in [('registers_per_thread', 'Registers / thread'), ('shared_memory_bytes', 'Shared memory / block (bytes)'), ('spills', 'Compiler spills')] %}
+      <tr><td>{{ label }}</td>{% for values in evidence.resources.values() %}<td>{{ values.get(key) if values.get(key) is not none else 'Not recorded' }}</td>{% endfor %}</tr>
+      {% endfor %}</tbody></table></div>{% else %}<p>No compiler resource comparison was recorded.</p>{% endif %}
+    <p class="subtle">Compiler resources describe allocation. They do not establish a runtime performance benefit.</p>
+  </section>
+</div>
+<div class="two-column">
+  <section class="panel"><div class="panel-head"><h2>Executable equivalence</h2></div>
+    {% if evidence.executable %}
+    <p><b>{{ 'Complete executable sections are byte-for-byte identical.' if evidence.executable.identical else 'Complete executable sections differ.' }}</b></p>
+    <dl class="facts"><dt>Baseline code</dt><dd>{{ '{:,}'.format(evidence.executable.size_bytes) }} bytes</dd>
+      <dt>Trusted code</dt><dd>{{ '{:,}'.format(evidence.executable.get('trusted_size_bytes', evidence.executable.size_bytes)) }} bytes</dd>
+      <dt>Constants / launch metadata</dt><dd>{{ 'Match' if evidence.constant_metadata_identical == true else 'Differ' if evidence.constant_metadata_identical == false else 'Not recorded' }}</dd>
+      <dt>PTX → SASS</dt><dd>{% if diagnostic.get('ptx_order_and_operands_identical_ignoring_debug') == false and evidence.executable.identical %}PTX differences do not survive into the final executable SASS.{% elif diagnostic.get('sass_instruction_stream_identical') == true %}The decoded SASS instruction streams match.{% else %}See compiler evidence in the raw record.{% endif %}</dd>
+    </dl><p class="subtle">Equivalence uses the full executable bytes, including instruction encodings, rather than instruction counts alone.</p>
+    {% else %}<p>No executable-equivalence comparison was recorded.</p>{% endif %}
+  </section>
+  <section class="panel"><div class="panel-head"><h2>Runtime benchmarking</h2><span class="status-pill neutral">{{ 'Measured' if evidence.runtime_measured == true else 'Not measured' }}</span></div>
+    {% if evidence.runtime_measured == false %}<p><b>Benchmarking was intentionally skipped.</b></p><p>{{ evidence.skip_reason }}</p>
+    <p>No latency, paired speedup, or performance improvement was established. A completed compiler diagnostic is not a measured performance success or failure.</p>
+    {% elif evidence.runtime_measured == true %}<p>{{ workflow_entry.performance_interpretation }}</p>
+    {% else %}<p>No runtime measurement is recorded for this evidence.</p>{% endif %}
+  </section>
+</div>
+<section class="panel"><div class="panel-head"><h2>Outcome and research interpretation</h2><span class="status-pill neutral">{{ workflow_entry.outcome|replace('_', ' ') }}</span></div>
+  <p>{{ workflow_entry.performance_interpretation }}</p>
+  {% if evidence.workflow_validation %}<p>The approved diagnostic completed and its artifacts were validated and added to memory. This establishes that the workflow works for this replay; it adds no independent research confirmation.</p>{% endif %}
+  {% if evidence.executable and evidence.runtime_measured == false %}<p>{{ 'The tested source differences produced equivalent compiled output for this configuration.' if evidence.executable.identical else 'The tested source differences produced different compiled output for this configuration.' }} Runtime effects remain unmeasured.</p>{% endif %}
+  {% if evidence.limits %}<h3>Limitations</h3><ul>{% for limit in evidence.limits %}<li>{{ limit }}</li>{% endfor %}</ul>{% endif %}
+  <p class="subtle path">Artifact: {{ workflow_entry.artifact_path }}</p>
+</section>
+{% if evidence.warnings %}<section class="panel warnings"><h2>Summary details unavailable</h2><ul>{% for warning in evidence.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></section>{% endif %}
+<details class="panel" id="raw-evidence"><summary>Complete raw evidence JSON</summary>
+  <pre>{{ workflow_entry|tojson(indent=2) }}</pre>
+</details>

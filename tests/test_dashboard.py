@@ -264,7 +264,7 @@ class DashboardTests(unittest.TestCase):
                       client.get(f"/experiments/{trusted}?compiler=1").data)
         self.assertIn(b"Baseline versus candidate",
                       client.get(f"/experiments/{structural}").data)
-        self.assertIn(b"Experiment timeline",
+        self.assertIn(b"Research timeline",
                       client.get("/?view=timeline").data)
         self.assertEqual(client.get(f"/?view=timeline&experiment={kernel}")
                          .headers["Location"], f"/experiments/{kernel}")

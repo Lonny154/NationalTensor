@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "reviewed_date": "2026-10-28",
+  "status": "reviewed_not_approved_for_execution",
+  "plan_path": "evaluations/experiment-planner/20261028T142437794739Z/plan.json",
+  "plan_sha256": "e40b0ff2e69867255c0cab728abe87041db1acf11081ac0147192ae1c634110a",
+  "reason": "The grouped-N wording does not specify a tile mapping and differs from the cited grouped-M4 implementation. Three existing grouped-M4 confirmation attempts are unconfirmed. Existing evidence is inconclusive and additional identical testing has limited expected value.",
+  "schedule_distinction": {
+    "grouped_m4": "Implemented GROUP_M=4: traverse four M rows for each N column across all 24 N columns, then advance to the next M group on the FC1 8x24 grid.",
+    "hypothetical_grouped_n": "Grouping four N columns would require a separately specified and reviewed PID-to-tile mapping. The current proposal does not define it; grouped-M4 measurements do not evaluate it.",
+    "baseline": "direct_2d in benchmark_proposal.py; distinct from trusted_two_slab_kernel.py"
+  },
+  "scope": "Only the tested grouped-M4 configuration on FP16 FC1 is inconclusive; no failure classification applies to the entire CTA-ordering family.",
+  "future_controlled_replication_allowed": true,
+  "replication_guidance": "A future controlled replication remains eligible with an explicit rationale, preserved source/configuration identity, existing correctness tolerances, paired timing, matched A/A controls, and a bounded noise-aware decision rule.",
+  "source_files": {
+    "grouped_matmul.py": "d5ddd7b61e6b9479c767634efb504b0780a90826ba2f80bb95125d17b9146cf5",
+    "benchmark_proposal.py": "9f7bbffd3180f0825364dd440845976e4ea6eb2dcbdf2fdcba3ac7e4b2c61288",
+    "benchmark_core.py": "8a3d69a7fac12503b70b74cb56ed1e7dc98664c9b8ce7e1ea1e376d03629c1b9",
+    "reference_precision.py": "3a48de29fa4ad478bc71c31cec6889ce112b359a6081bef8031c2ba91bb7f73c"
+  },
+  "confirmation_artifacts": [
+    {
+      "path": "evaluations/grouped-m4/20261026T203805171872Z.json",
+      "sha256": "7dd0b46492e1d6eb50b4574c39db1841a454886406ed7cc7f01661e6ae2a31b6"
+    },
+    {
+      "path": "evaluations/grouped-m4/20261026T215838754523Z.json",
+      "sha256": "f98ea1f3f94b0b35e3f90838f5fbf0208d1e22ba82ca01736a90456f9c20a2b5"
+    },
+    {
+      "path": "runs/20261027T010046401977Z/summary.json",
+      "sha256": "2b5b5da60284b8e4e8df5530ae8b32594baffd60754dfafa313cab3b67a03267"
+    }
+  ]
+}

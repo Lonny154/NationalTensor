@@ -51,12 +51,21 @@ class PlannerTests(unittest.TestCase):
         self.assertTrue(any(row["shape_mnk"] == [128, 3072, 768] for row in rows))
         self.assertTrue(any(row["shape_mnk"] == [1024, 1024, 1024] for row in rows))
         two = next(row for row in rows if row["id"].startswith("trusted:trusted-two-slab:"))
+        tuned = next(row for row in rows if row["id"].startswith("stage_reduction:"))
         self.assertEqual(two["performance_interpretation"], "Screening loss")
         self.assertEqual(two["correctness"], "PASS")
         self.assertEqual(two["trusted_implementation_sha256"],
                          "5091c2df5c27ede3cce7b0472a157b8787e86c8714f0d384b5cd587babc9f5d0")
         self.assertAlmostEqual(two["screening"]["aa_median_absolute_ratio_deviation"],
                                0.04851305314242971)
+        self.assertEqual(tuned["outcome"], "two_stage_screening_loss")
+        self.assertEqual(tuned["correctness"], "PASS")
+        self.assertAlmostEqual(tuned["screening"]["median_paired_speedup"],
+                               0.951883129051782)
+        self.assertEqual(tuned["compiler_resources"]["stages_2"]
+                         ["shared_memory_bytes"], 24576)
+        self.assertEqual(tuned["profiling_evidence"]["metrics"]["stages_2"]
+                         ["sm__maximum_warps_per_active_cycle_pct"], 33.33)
         self.assertTrue(any(row["kind"] == "generated_proposal"
                             and row["correctness"] == "not evaluated" for row in rows))
         self.assertEqual(planner.parse_plan(json.dumps(plan), rows), plan)
@@ -77,6 +86,8 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("Screening is not confirmation", prompt)
         self.assertIn("does not rule out an entire optimization family", prompt)
         self.assertIn("do not prove identical runtime performance", prompt)
+        self.assertIn("Keep resource improvement separate from performance improvement", prompt)
+        self.assertIn("two_stage_screening_loss", prompt)
         self.assertIn("do_not_repeat", prompt)
 
     def test_actual_failed_response_requires_correct_json_types_and_valid_citations(self):

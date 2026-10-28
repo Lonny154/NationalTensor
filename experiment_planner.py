@@ -23,7 +23,7 @@ MODEL = "muse-spark-1.3"
 API_BASE_URL = "https://api.meta.ai/v1"
 PLAN_SECTION = "evaluations/experiment-planner"
 MAX_FILE_BYTES = 256_000
-MAX_CONTEXT = 8
+MAX_CONTEXT = 10
 KINDS = {
     "kernel_transformation", "workload_shape", "numeric_tuning",
     "memory_movement", "profiling", "do_not_repeat",
@@ -32,6 +32,8 @@ OBSERVATIONS = {
     "correctness", "compilation", "performance_interpretation", "screening",
     "compiler_evidence", "compiler_resources", "confirmation", "provenance",
     "outcome", "shape_mnk", "profiling_evidence",
+    "confirmation_evidence", "review_status",
+    "diagnostic_evidence",
 }
 FIELDS = {
     "research_question", "experiment_kind", "target_shape_mnk",
@@ -68,7 +70,8 @@ def _shape(value) -> list[int]:
 
 
 def _observation_available(entry: dict, key: str) -> bool:
-    if key in {"screening", "compiler_evidence", "compiler_resources", "profiling_evidence"}:
+    if key in {"screening", "compiler_evidence", "compiler_resources", "profiling_evidence",
+               "confirmation_evidence", "review_status", "diagnostic_evidence"}:
         return bool(entry.get(key))
     return entry.get(key) is not None
 
@@ -134,11 +137,7 @@ def _evidence_provenance(plan: dict, evidence: list[dict]) -> list[dict]:
 
 def build_context(root: Path = ROOT) -> dict:
     history = load_history(root)
-    from profile_report import load_verified_report
-    profile, profile_warnings = load_verified_report(root)
-    memory = experiment_memory.from_history(history,
-        profile_reports=[profile] if profile else ())
-    memory["warnings"].extend(profile_warnings)
+    memory = experiment_memory.reconstruct(root)
     if not memory["entries"]:
         raise ValueError("No verified experiment memory is available")
     proposals = [item for item in history["proposals"]
@@ -156,7 +155,14 @@ def build_context(root: Path = ROOT) -> dict:
                  "launcher_sha256": latest.get("launcher_sha256"),
                  "numeric_config": numeric}
     selected = experiment_memory.retrieve(memory, shape=(512, 3072, 768),
-                                          limit=6, **arguments)
+                                          limit=7, **arguments)
+    if all(row["kind"] != "generated_proposal" for row in selected):
+        generated = experiment_memory.retrieve(
+            {"entries": [entry for entry in memory["entries"]
+                         if entry["kind"] == "generated_proposal"]},
+            shape=(512, 3072, 768), limit=1, **arguments)
+        if generated:
+            selected.append(generated[0])
     for shape in shapes:
         if shape == (512, 3072, 768) or len(selected) >= MAX_CONTEXT:
             continue
@@ -171,6 +177,7 @@ def build_context(root: Path = ROOT) -> dict:
             "available_workload_shapes_mnk": [list(shape) for shape in shapes],
             "measurement_method": "python_launch_cuda_event",
             "relevant_experiment_memory": selected,
+            "completed_advisory_decisions": memory.get("completed_advisory_decisions", []),
             "allowed_observation_keys": sorted(OBSERVATIONS),
             "memory_warnings": memory["warnings"][:8],
             "allowed_experiment_kinds": sorted(KINDS),
@@ -187,6 +194,11 @@ def build_context(root: Path = ROOT) -> dict:
                 "Do not use A/A timing variation as a measure of profiler-counter uncertainty or claim an unmeasured bottleneck is established.",
                 "Nsight Compute replay counters are distinct from paired CUDA-event latency. Two captures are descriptive and do not prove causality or statistical significance.",
                 "When citing the completed profiling study, use its profiling_evidence observation key and preserve the source/manifest provenance.",
+                "Experiment 002 reduced shared memory and raised occupancy while two-stage latency worsened. Keep resource improvement separate from performance improvement; one descriptive Nsight capture per configuration does not establish latency causality.",
+                "Existing grouped_m4 uses GROUP_M=4, not groups of four N tiles. Hypothetical grouped-N needs an explicit separately reviewed mapping and has not been evaluated by grouped-M4 measurements.",
+                "Use the grouped-M4 confirmation history and review_status: three unconfirmed attempts leave this configuration inconclusive. The current ambiguous proposal was reviewed but not approved for execution; additional identical testing has limited expected value. A justified future controlled replication remains eligible; do not reject the entire CTA-ordering family.",
+                "Completed advisory decisions are already reviewed and deferred. Select a distinct unresolved optimization or profiling question justified by verified experiment memory; choose the technical direction yourself. Do not repeat an existing do_not_repeat decision, including paraphrases, without new verified evidence. Explain what is new relative to completed decisions. Any execution still requires separate human approval.",
+                "Experiment 003 is compiler_equivalent_screening_skipped on M=128: correctness passed and executable bytes, constants, launch metadata, and resources match. Runtime screening was intentionally skipped. This is a compiler diagnostic with no latency conclusion, not a measured performance failure or a measured runtime equivalence result.",
             ]}
 
 
@@ -330,10 +342,16 @@ def propose_to_directory(client, prompt: str, context: dict, root: Path = ROOT) 
                  "api_wall_s": time.perf_counter() - started}
         try:
             plan = parse_plan(raw, context["relevant_experiment_memory"])
+            from advisory_decisions import repeated_decision
+            completed_match = repeated_decision(plan, context)
             prior, _ = load_saved_plans(root)
             match = next((item for item in prior
                           if direction_key(item["plan"]) == direction_key(plan)), None)
-            if match:
+            if completed_match:
+                metadata.update(status="duplicate_direction", duplicate_of=completed_match["plan_path"])
+                audit["duplicate_of"] = completed_match["plan_path"]
+                audit["rejection"] = "Scoped advisory decision already completed; no new verified evidence"
+            elif match:
                 metadata.update(status="duplicate_direction",
                                 duplicate_of=match["artifact_path"])
                 audit["duplicate_of"] = match["artifact_path"]
