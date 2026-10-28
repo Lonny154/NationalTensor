@@ -1,0 +1,29 @@
+{
+  "research_question": "Does the trusted two-slab loop's higher resource use constrain execution enough to outweigh its lower loop overhead on FC1?",
+  "experiment_kind": "profiling",
+  "target_shape_mnk": [512, 3072, 768],
+  "optimization_mechanism": "Measure occupancy and memory-pipeline behavior before another K-loop rewrite",
+  "technical_hypothesis": "The trusted two-slab version's higher register and shared-memory requirements may limit scheduling flexibility; the causal effect has not been measured.",
+  "supporting_evidence": [
+    {
+      "id": "trusted:trusted-two-slab:20261027T161358957319Z",
+      "artifact_path": "evaluations/trusted-two-slab/20261027T161358957319Z/",
+      "observation_keys": ["screening", "compiler_resources", "correctness"],
+      "why_relevant": "The independently reviewed implementation passed correctness but screened slower while using more registers and shared memory."
+    },
+    {
+      "id": "trusted:trusted-compute:20261027T154233319712Z",
+      "artifact_path": "evaluations/trusted-compute/20261027T154233319712Z/",
+      "observation_keys": ["performance_interpretation", "compiler_evidence"],
+      "why_relevant": "The earlier mask and pipeline change was inconclusive and did not establish a compiler-level improvement."
+    }
+  ],
+  "reasoning_from_evidence": "The two-slab trusted kernel reduced executed instructions but lost in paired screening; its resource use increased. Actual occupancy and the cause of the slowdown remain unknown, so a bounded profiling study could resolve a specific uncertainty.",
+  "difference_from_previous": "This measures scheduling and memory behavior of reviewed kernels; it does not generate or benchmark another Muse source proposal.",
+  "expected_performance_mechanism": "If resource pressure limits active blocks, reducing live operand staging in a later design could improve latency hiding. This is a prediction, not an observed speedup.",
+  "risks_and_uncertainties": ["Profiling overhead changes execution conditions and should not be used as a latency measurement.", "A/A variation and idle-associated anomalies limit small paired timing conclusions."],
+  "correctness_plan": "Reuse the saved six shape-and-seed correctness records for the same reviewed binaries; rerun correctness only if a kernel changes.",
+  "measurement_plan": "Profile one bounded FC1 launch per reviewed implementation for achieved occupancy and memory stalls; keep profiler counts separate from paired CUDA-event screening and preserve raw output.",
+  "support_criteria": "Observed occupancy or stall differences align with the resource-pressure prediction and motivate a separately reviewed kernel change.",
+  "contradict_criteria": "Occupancy and stall behavior are comparable despite resource differences, or profiler evidence points to another bottleneck."
+}

@@ -17,6 +17,7 @@ from dashboard_data import ROOT, load_compiler_detail, load_history
 from dashboard_interpretation import decorate_history
 from dashboard_proposals import ProposalManager
 import experiment_memory
+from experiment_planner import load_saved_plans
 from kernel_evolution import MODEL as PROPOSAL_MODEL
 
 
@@ -141,6 +142,39 @@ def _prompt_evidence(selected: dict, records: dict) -> dict:
                 and not selected.get("feedback_link")}
 
 
+def _planner_references(saved_plan: dict, history: dict, records: dict) -> list[dict]:
+    """Resolve cited evidence against current, verified experiment memory."""
+    memory = {row["id"]: row for row in experiment_memory.from_history(history)["entries"]}
+    provenance = {row["id"]: row for row in saved_plan["evidence_provenance"]}
+    results = []
+    for ref in saved_plan["plan"].get("supporting_evidence", []):
+        if not isinstance(ref, dict):
+            continue
+        entry = memory.get(ref.get("id")) if isinstance(ref.get("id"), str) else None
+        recorded = provenance.get(ref.get("id")) if isinstance(ref.get("id"), str) else None
+        verified = bool(entry and entry.get("artifact_path") == ref.get("artifact_path")
+                        and ref["id"] in records and recorded
+                        and recorded.get("original_muse_source_sha256")
+                        == entry.get("original_muse_source_sha256")
+                        and recorded.get("trusted_implementation_sha256")
+                        == entry.get("trusted_implementation_sha256"))
+        results.append({"id": ref["id"] if verified else None,
+                        "label": records[ref["id"]]["label"] if verified else "Evidence unavailable",
+                        "artifact_path": ref.get("artifact_path"),
+                        "why_relevant": ref.get("why_relevant"),
+                        "verified": verified,
+                        "performance": entry.get("performance_interpretation") if verified else None,
+                        "correctness": entry.get("correctness") if verified else None,
+                        "screening": entry.get("screening") if verified else None,
+                        "resources": (entry.get("compiler") or {}).get("resources")
+                                     if verified else None,
+                        "compiler_note": (entry.get("compiler") or {}).get("review", {}).get("ptx")
+                                         if verified and "compiler_evidence" in ref.get("observation_keys", []) else None,
+                        "generated_sha256": entry.get("original_muse_source_sha256") if verified else None,
+                        "trusted_sha256": entry.get("trusted_implementation_sha256") if verified else None})
+    return results
+
+
 def create_app(root: Path = ROOT) -> Flask:
     app = Flask(__name__)
     app.secret_key = secrets.token_bytes(32)
@@ -222,6 +256,10 @@ def create_app(root: Path = ROOT) -> Flask:
             session["csrf_token"] = secrets.token_urlsafe(32)
         history = decorate_history(load_history(root))
         records = {item["id"]: item for item in history["timeline"]}
+        plans, planner_warnings = load_saved_plans(root)
+        latest_plan = plans[-1] if plans else None
+        plan_references = (_planner_references(latest_plan, history, records)
+                           if latest_plan and view == "overview" else [])
         selected = records.get(selected_id) if selected_id else None
         if selected_id and selected is None:
             abort(404)
@@ -269,6 +307,8 @@ def create_app(root: Path = ROOT) -> Flask:
             related_memory=related_memory, prompt_evidence=prompt_evidence,
             mechanism_primary=mechanism_primary,
             mechanism_secondary=mechanism_secondary,
+            latest_plan=latest_plan, plan_references=plan_references,
+            planner_warnings=planner_warnings,
             csrf_token=session["csrf_token"], proposal_model=PROPOSAL_MODEL)
 
     return app

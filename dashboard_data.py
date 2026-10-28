@@ -205,7 +205,7 @@ def _kernel(root: Path, warnings: list[str]) -> tuple[list[dict], int]:
             "dtype": "fp16", "config": metadata.get("numeric_config"),
             "baseline_sha256": metadata.get("baseline_sha256"),
             "launcher_sha256": metadata.get("launcher_sha256"),
-            "gpu": metadata.get("gpu"),
+            "gpu": metadata.get("gpu"), "hardware": metadata.get("hardware"),
             "hypothesis": metadata.get("hypothesis", ""),
             "expected_mechanism": metadata.get("expected_mechanism", ""),
             "reasoning": metadata.get("reasoning_from_feedback", ""),

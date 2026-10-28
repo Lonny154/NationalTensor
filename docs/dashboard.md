@@ -3,6 +3,9 @@
 The dashboard reads the checkpointed files under `evaluations/` and
 `docs/day2_checkpoint.md`. An explicit **Request one hypothesis** action can
 call Muse and write a new proposal under `evaluations/kernel-evolution/`.
+The Overview page also displays the latest saved advisory research plan from
+`evaluations/experiment-planner/`, if one exists; [the planner CLI](experiment_planner.md)
+is a separate explicit action.
 The server binds to `127.0.0.1` with debug mode disabled. Generated source and
 model text are displayed through Flask's escaped templates; they are never
 imported, compiled, approved, or executed.

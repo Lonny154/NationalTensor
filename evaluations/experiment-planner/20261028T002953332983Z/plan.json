@@ -1,0 +1,45 @@
+{
+  "contradict_criteria": "Paired profiler comparison shows no reproducible difference in stalls, bandwidth, or occupancy between baseline and trusted implementations on the focus workload, or any difference is within run-to-run variation.",
+  "correctness_plan": "Retain existing FP16 reference PASS criteria for reviewed implementations; any follow-on change must re-pass the same reference check without altering tolerance.",
+  "difference_from_previous": "This profiles the already-reviewed baseline, mask-hoisted, and two-slab implementations on the focus shape instead of proposing another K-loop or mask-hoisting source change.",
+  "expected_performance_mechanism": "No speedup is claimed; a reproducibly measured stall or throughput limiter, if observed, could motivate a later targeted optimization.",
+  "experiment_kind": "profiling",
+  "measurement_plan": "Run bounded profiler collection on the focus shape separately from paired CUDA-event screening; keep each screening ratio paired within its saved run and do not pool absolute times across runs.",
+  "optimization_mechanism": "Profile existing reviewed kernels to locate a measured bottleneck before another transformation",
+  "reasoning_from_evidence": "Measured screening deltas are within paired noise: trusted-compute median 1.002 with paired MAD 0.041 and AA deviation 0.038, and two-slab median 0.947 with AA deviation 0.048. Compiler shows identical registers and shared memory for trusted-compute versus doubled shared memory and higher registers for two-slab on the same workload, which does not establish overlap or stalls. The bottleneck is a prediction to test, not an established finding.",
+  "research_question": "Which reproducibly measured profiler bottleneck distinguishes baseline from reviewed mask-hoisted and two-slab kernels on 512x3072x768 FP16?",
+  "risks_and_uncertainties": [
+    "Profiling perturbs execution and does not establish latency or speedup.",
+    "Profiler counters have separate run-to-run variation from CUDA-event screening noise.",
+    "Conclusions scope only to the tested implementations, configuration, workload, and method."
+  ],
+  "support_criteria": "A reproducible paired profiler observation identifies a specific stall, occupancy, or memory-throughput limiter to test on the focus workload.",
+  "supporting_evidence": [
+    {
+      "artifact_path": "evaluations/trusted-compute/20261027T154233319712Z/",
+      "id": "trusted:trusted-compute:20261027T154233319712Z",
+      "observation_keys": [
+        "screening",
+        "compiler_evidence",
+        "correctness"
+      ],
+      "why_relevant": "Supplies near-parity screening within noise and identical compiled resources for the reviewed mask-hoisting implementation on the focus shape."
+    },
+    {
+      "artifact_path": "evaluations/trusted-two-slab/20261027T161358957319Z/",
+      "id": "trusted:trusted-two-slab:20261027T161358957319Z",
+      "observation_keys": [
+        "screening",
+        "compiler_resources",
+        "correctness"
+      ],
+      "why_relevant": "Supplies screening loss with increased registers and doubled shared memory for the reviewed two-slab implementation on the same focus shape."
+    }
+  ],
+  "target_shape_mnk": [
+    512,
+    3072,
+    768
+  ],
+  "technical_hypothesis": "Unmeasured overlap or scheduling stalls may explain near-parity screening; targeted profiling may reveal the limiter to guide a future experiment."
+}
