@@ -1,7 +1,68 @@
 {% from 'hollywood/macros.html' import sequence %}
 <div class="mission-kicker"><span>NT / HUMAN AUTHORIZATION REQUIRED</span><span>THE HEIST · TRUSTED DIAGNOSTIC ONLY</span></div>
 <section class="heist-heading"><div><div class="eyebrow">MISSION BRIEFING / SAVED MUSE ADVISORY</div><h1>{{ mission.title }}</h1><p>{{ mission.narrative }}</p></div><a class="mission-cta" href="#{{ mission.anchor }}">{{ mission.action }} ↓</a></section>
+<div class="mission-entry" aria-label="Operation Stolen Cycles">
+  <div><span class="file-number">OPERATION 003 / STOLEN CYCLES</span><p>The compiler is hiding something. Put the evidence under a very dramatic lamp.</p></div>
+  <div class="mission-entry-actions">
+    <button type="button" class="action-button" data-mission-open="live" {% if not workflow_plan %}disabled{% endif %}>Open Live Mission</button>
+    <button type="button" class="action-button" data-mission-open="replay" {% if not mission_replay %}disabled{% endif %}>Replay Experiment 003</button>
+  </div>
+</div>
+<div id="mission-overlay" class="mission-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="mission-title"
+     data-status-url="{{ url_for('research_status') }}" data-evidence-prefix="/api/research/mission/evidence/"
+     data-plan-id="{{ workflow_plan.run_id if workflow_plan else '' }}"
+     data-plan="{{ workflow_plan.plan|tojson|forceescape if workflow_plan else '{}' }}"
+     data-review="{{ workflow_review.decision if workflow_review else '' }}"
+     data-job="{{ mission.job|tojson|forceescape if mission.job else 'null' }}"
+     data-replay="{{ mission_replay|tojson|forceescape if mission_replay else 'null' }}">
+  <div class="mission-backdrop" aria-hidden="true"><div class="mission-grid"></div></div>
+  <div class="mission-vault" aria-hidden="true">
+    <div class="vault-warning"><i></i><span id="vault-signal">LOCKED / AWAITING EVIDENCE</span><i></i></div>
+    <div class="vault-machine">
+      <div class="vault-chamber"><span>NT</span><small>VERIFIED<br>INTELLIGENCE</small></div>
+      <div class="vault-door">
+        <svg class="vault-face" viewBox="0 0 500 500" focusable="false" aria-hidden="true">
+          <defs><radialGradient id="vault-metal"><stop offset="0" stop-color="#45533d"/><stop offset=".56" stop-color="#26362a"/><stop offset=".85" stop-color="#111e17"/><stop offset="1" stop-color="#9b8145"/></radialGradient></defs>
+          <circle cx="250" cy="250" r="239" fill="url(#vault-metal)" stroke="#ddbd76" stroke-width="7"/>
+          <circle cx="250" cy="250" r="213" fill="none" stroke="#8ea879" stroke-width="3" stroke-dasharray="3 12"/>
+          <circle cx="250" cy="250" r="186" fill="#0a1912" stroke="#a5bd88" stroke-width="15"/>
+          <circle cx="250" cy="250" r="164" fill="none" stroke="#e0b86c" stroke-width="2" stroke-dasharray="16 9"/>
+          <g class="vault-dial"><circle cx="250" cy="250" r="134" fill="#20362a" stroke="#d9b66b" stroke-width="8"/><circle cx="250" cy="250" r="118" fill="none" stroke="#a3ca8d" stroke-width="3" stroke-dasharray="2 14"/><path d="M250 118v55 M250 327v55 M118 250h55 M327 250h55 M157 157l39 39 M304 304l39 39 M343 157l-39 39 M196 304l-39 39" stroke="#d9bb76" stroke-width="13" stroke-linecap="round"/><circle cx="250" cy="250" r="47" fill="#0a1d16" stroke="#e3c885" stroke-width="9"/><path d="M250 226a15 15 0 0 1 9 27l8 23h-34l8-23a15 15 0 0 1 9-27" fill="#e6c681"/></g>
+          <circle cx="250" cy="250" r="234" fill="none" stroke="#f7e5a1" stroke-width="2" stroke-dasharray="90 63"/>
+        </svg>
+        <div class="vault-scan"></div>
+      </div>
+    </div>
+    <div class="vault-machine-caption">ASSET 003 / GPU COMPILER VAULT <span>THE DIAL IS DECORATIVE, NOT A PROGRESS METER</span></div>
+  </div>
+  <div class="mission-stage">
+    <header class="mission-topline"><span>NT // BUREAU OF IMPROBABLE COMPUTATION</span><span id="mission-kind">LIVE MISSION</span><div><button type="button" id="mission-effects" aria-pressed="false">Skip effects</button><button type="button" id="mission-sound" aria-pressed="false">Sound off</button><button type="button" id="mission-close" aria-label="Close mission">× Close</button></div></header>
+    <div class="mission-scene" id="mission-scene">
+      <div class="mission-eyebrow" id="mission-step">01 / BRIEFING</div>
+      <h2 id="mission-title">OPERATION<br>STOLEN CYCLES</h2>
+      <p class="mission-quote" id="mission-quote">“The compiler is hiding something.”</p>
+      <div class="mission-scene-body" id="mission-body"></div>
+      <div class="mission-controls" id="mission-controls"></div>
+    </div>
+    <footer class="mission-footer"><span>THEATRICAL DIALOGUE // VERIFIED DATA LABELED BELOW</span><span>ESC closes · Closing does not stop a job</span></footer>
+  </div>
+</div>
 {{ sequence(mission) }}
+<section class="panel" id="muse-debrief-hollywood"><div class="eyebrow">OPERATION 003 / MUSE RESEARCH DEBRIEF</div><h2>The compiler's alibi</h2>
+  {% if muse_debrief_package %}<p><b>Measured evidence:</b> Four correctness checks passed; executable bytes, constants, launch metadata, and compiler resources matched. Runtime screening was skipped. No latency or speedup was measured.</p>
+    <p><a href="{{ url_for('research_evidence', evidence_id=muse_debrief_package.evidence_id) }}">Inspect verified evidence →</a></p>
+    {% if muse_debrief %}{% set interpretation = muse_debrief.interpretation %}
+      <p><b>Muse interpretation:</b> {{ interpretation.technical_interpretation.text }}</p>
+      <p><b>Supporting citations:</b> {% for citation in interpretation.technical_interpretation.citations %}{{ citation.evidence_id }} / {{ citation.observation_key }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
+      <p><b>Limitations:</b> {{ interpretation.limitations_uncertainties.text }}</p>
+      <p><b>Recommended research action:</b> {{ interpretation.recommended_next_action.text }}</p>
+      <p><b>Plain-language explanation:</b> {{ interpretation.nontechnical_explanation.text }}</p>
+      <blockquote><b>Theatrical dialogue · {{ muse_debrief.response_model }}:</b> {{ interpretation.hollywood_debrief.text }}</blockquote>
+      <p class="subtle">Dialogue is fiction. The technical findings above come from the verified Experiment 003 artifact.</p>
+    {% else %}<p>No Muse interpretation has been accepted yet.</p>
+      <form method="post" action="{{ url_for('request_muse_debrief') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button">Request one live Muse Research Debrief</button></form>{% endif %}
+  {% else %}<p>{{ muse_debrief_warning or 'Verified Experiment 003 evidence is unavailable.' }}</p>{% endif %}
+</section>
 <div class="heist-board">
   <section class="heist-brief"><span class="file-number">THE TARGET</span><h2>{{ workflow_plan.plan.research_question if workflow_plan else 'No advisory plan selected.' }}</h2>
     {% if workflow_plan %}<p>{{ workflow_plan.plan.technical_hypothesis }}</p><dl><dt>Proposed mechanism</dt><dd>{{ workflow_plan.plan.optimization_mechanism }}</dd><dt>Fixed workload</dt><dd>{{ workflow_plan.plan.target_shape_mnk|join(' × ') }} FP16</dd><dt>Plan SHA-256</dt><dd class="hash">{{ workflow_plan.plan_sha256 }}</dd></dl>{% endif %}

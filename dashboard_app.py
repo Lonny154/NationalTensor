@@ -13,6 +13,7 @@ import secrets
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 from dashboard_hollywood import mission_state
+from dashboard_mission import HISTORICAL_ID, mission_evidence
 
 from dashboard_data import ROOT, load_compiler_detail, load_history
 from dashboard_interpretation import decorate_history
@@ -23,6 +24,7 @@ import experiment_memory
 from experiment_planner import load_saved_plans
 from kernel_evolution import MODEL as PROPOSAL_MODEL
 from research_workflow import WorkflowManager, RUNNER_ID, binding
+import muse_debrief
 
 
 ALLOWED_HOSTS = {"127.0.0.1", "127.0.0.1:8501", "localhost", "localhost:8501"}
@@ -246,6 +248,14 @@ def create_app(root: Path = ROOT) -> Flask:
         workflow.recover()
         return jsonify(planning=workflow.planning_status(), jobs=workflow.jobs())
 
+    @app.get("/api/research/mission/evidence/<path:evidence_id>")
+    def research_mission_evidence(evidence_id):
+        memory = experiment_memory.reconstruct(root)
+        entry = next((row for row in memory["entries"] if row["id"] == evidence_id), None)
+        if entry is None or (evidence_id != HISTORICAL_ID and not evidence_id.startswith("workflow:")):
+            abort(404)
+        return jsonify(mission_evidence(root, entry))
+
     def activity_links(rows):
         linked = []
         for row in rows:
@@ -277,6 +287,29 @@ def create_app(root: Path = ROOT) -> Flask:
         except ValueError as exc:
             return str(exc), 409
         return redirect(url_for("research"), code=303)
+
+    @app.post("/research/muse-debrief")
+    def request_muse_debrief():
+        try:
+            if muse_debrief.load_accepted(root):
+                return redirect(url_for("research", _anchor="muse-debrief"), code=303)
+            from dotenv import load_dotenv
+            from openai import OpenAI
+            import os
+            load_dotenv(dotenv_path=root / ".env")
+            key = os.environ.get("MODEL_API_KEY")
+            if not key:
+                return "MODEL_API_KEY is required for a live Muse debrief", 409
+            client = OpenAI(base_url=muse_debrief.API_BASE_URL, api_key=key,
+                            timeout=30.0, max_retries=0)
+            status = muse_debrief.request_once(client, root)
+            if status == "request_in_progress":
+                return "A Muse debrief request is already active", 409
+            if status == "rejected":
+                return "Muse response rejected; prompt and raw response saved in debrief audit", 422
+            return redirect(url_for("research", _anchor="muse-debrief"), code=303)
+        except (ValueError, OSError) as exc:
+            return str(exc), 409
 
     @app.post("/research/plans/<run_id>/<action>")
     def research_action(run_id, action):
@@ -317,11 +350,20 @@ def create_app(root: Path = ROOT) -> Flask:
         if "csrf_token" not in session:
             session["csrf_token"] = secrets.token_urlsafe(32)
         state = {"planning": workflow.planning_status(), "jobs": workflow.jobs()}
+        historical = next((row for row in memory["entries"] if row["id"] == HISTORICAL_ID), None)
+        try:
+            debrief_package = muse_debrief.evidence_package(root)
+            debrief = muse_debrief.load_accepted(root, debrief_package)
+            debrief_warning = None
+        except ValueError as exc:
+            debrief_package, debrief, debrief_warning = None, None, str(exc)
         return render_template("dashboard.html", view="research", csrf_token=session["csrf_token"],
             workflow_plans=plans, workflow_plan=selected_plan, workflow_review=review,
             workflow_binding=eligibility, workflow_blocked=blocked, workflow_evidence=evidence,
             workflow_state=state, workflow_warnings=warnings + memory["warnings"],
             workflow_runner=RUNNER_ID,
+            mission_replay=mission_evidence(root, historical) if historical else None,
+            muse_debrief=debrief, muse_debrief_package=debrief_package, muse_debrief_warning=debrief_warning,
             mission=mission_state(selected_plan, review, state, blocked, {row["id"]: row for row in memory["entries"]}))
 
     @app.get("/research/evidence/<path:evidence_id>")

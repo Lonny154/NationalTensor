@@ -1,0 +1,45 @@
+/* One cinematic mission. The dial and beams signal scenes, never GPU progress. */
+.mission-overlay{--vault-light:#b8df91;--vault-gold:#e7c378;background:#030a06}
+.mission-overlay[data-vault="failed"]{--vault-light:#f58c69;--vault-gold:#ffae83}
+.mission-overlay[data-vault="open"]{--vault-light:#ffe197;--vault-gold:#ffe197}
+.mission-backdrop{background:radial-gradient(ellipse at 78% 48%,#31513688,transparent 49%),repeating-linear-gradient(90deg,#16351d14 0 1px,transparent 1px 72px),linear-gradient(130deg,#020805,#0d1b11 64%,#251e0d)}
+.mission-backdrop:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 96%,#b9dca312 100%);background-size:100% 5px;opacity:.45;pointer-events:none}
+.mission-vault{position:fixed;z-index:0;right:2.5vw;top:50%;transform:translateY(-48%);width:min(45vw,680px);pointer-events:none;filter:drop-shadow(0 0 34px #87c97836)}
+.vault-warning,.vault-machine-caption{display:flex;align-items:center;justify-content:space-between;gap:15px;font:700 10px/1.4 var(--mono);letter-spacing:.15em;color:var(--vault-gold);text-align:center}
+.vault-warning i{display:block;width:12px;height:12px;flex:none;border-radius:50%;background:var(--vault-gold);box-shadow:0 0 20px var(--vault-gold)}
+.vault-machine{position:relative;width:100%;aspect-ratio:1;perspective:1100px;transform-style:preserve-3d;margin:18px 0}
+.vault-machine:before{content:"";position:absolute;inset:2%;border:16px double #988451;border-radius:50%;box-shadow:0 0 0 17px #18291d,0 0 0 24px #647951,inset 0 0 55px #05130b;opacity:.85}
+.vault-chamber{position:absolute;inset:11%;border-radius:50%;background:radial-gradient(circle,#493b1d 0,#182b1d 39%,#050e08 72%);border:4px solid #d8b96d;box-shadow:inset 0 0 80px #e9cc6b80,0 0 60px #d7b96333;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.25;transition:opacity .28s ease;overflow:hidden}
+.vault-chamber span{font:700 clamp(85px,14vw,190px)/1 Georgia,serif;color:#f6dc8f;text-shadow:0 0 45px #f1d46c}.vault-chamber small{font:700 11px/1.6 var(--mono);letter-spacing:.2em;color:#ffe5a5;text-align:center}
+.vault-door{position:absolute;inset:4%;transform-origin:12% 50%;transition:transform .6s cubic-bezier(.15,.75,.2,1),filter .4s ease;transform-style:preserve-3d;filter:drop-shadow(14px 16px 10px #000b)}
+.vault-face{display:block;width:100%;height:100%}.vault-dial{transform-origin:250px 250px;animation:vault-turn 18s linear infinite;filter:drop-shadow(0 0 8px #dfd08544)}
+.vault-scan{position:absolute;inset:5%;border-radius:50%;overflow:hidden;opacity:0;box-shadow:inset 0 0 40px #8affba88}
+.vault-scan:after{content:"";position:absolute;left:-10%;top:-20%;width:45%;height:140%;background:linear-gradient(90deg,transparent,#86ffad17 35%,#98ffbd88 50%,#86ffad17 65%,transparent);transform:skewX(-20deg);animation:vault-scan 2.2s ease-in-out infinite alternate}
+.vault-machine-caption{border-top:1px solid #748b5e;padding-top:13px;align-items:flex-start;text-align:left}.vault-machine-caption span{color:#9bb18d;font-size:8px;max-width:175px;text-align:right}
+.mission-overlay[data-vault="locked"] .vault-dial{animation-play-state:paused}
+.mission-overlay:is([data-vault="scanning"],[data-vault="archive"]) .vault-scan{opacity:1}
+.mission-overlay[data-vault="archive"] .vault-warning{color:#e7c378}
+.mission-overlay[data-vault="archive"] .vault-scan{opacity:.45}
+.mission-overlay[data-vault="open"] .vault-door{transform:rotateY(-100deg) translateX(-4%);filter:drop-shadow(20px 15px 20px #000c)}
+.mission-overlay[data-vault="open"] .vault-chamber{opacity:1}
+.mission-overlay[data-vault="failed"] .vault-door{filter:drop-shadow(0 0 20px #fc714f88)}
+.mission-overlay[data-vault="failed"] .vault-warning i{animation:vault-alert .7s steps(2,end) infinite}
+.mission-stage{position:relative;z-index:1;background:linear-gradient(90deg,#030a06b8 0,#030a0699 47%,transparent 72%)}
+.mission-scene{width:min(55%,780px);max-width:780px;padding:35px 0 48px;margin:auto 0}
+.mission-scene h2{font-size:clamp(3rem,6.5vw,6.4rem);line-height:.94;max-width:760px}
+.mission-overlay[data-scene="vault"] .mission-scene h2{font-size:clamp(3rem,5vw,5rem)}
+.mission-quote{margin-bottom:22px}
+.mission-scene-body{gap:6px}.mission-fact{padding:9px 12px;grid-template-columns:minmax(120px,25%) 1fr}.mission-fact strong{font-size:12px}
+.mission-story{border:1px solid #b3a26a;background:linear-gradient(100deg,#3c321be8,#192a1ee8);padding:17px 20px;margin-bottom:7px;box-shadow:inset 4px 0 var(--vault-gold)}
+.mission-story b{display:block;font:700 11px var(--mono);letter-spacing:.18em;color:var(--vault-gold);margin-bottom:7px}.mission-story p{margin:0;color:#f6efd8;font:17px/1.46 Georgia,serif}
+.mission-terminal{margin:6px 0 8px;min-height:120px;padding:15px 18px}.mission-terminal-line{font-size:11px}
+.mission-controls{margin-top:17px}
+.mission-overlay[data-scene="vault"] .mission-fact:nth-of-type(n+5){background:#07180eeb}
+@keyframes vault-turn{to{transform:rotate(360deg)}}
+@keyframes vault-scan{from{left:-54%}to{left:115%}}
+@keyframes vault-alert{50%{opacity:.2;box-shadow:none}}
+@media(max-width:1050px){.mission-vault{width:46vw;right:-8vw;opacity:.65}.mission-scene{width:min(70%,700px)}.mission-stage{background:linear-gradient(90deg,#030a06e8,#030a06aa 65%,transparent)}}
+@media(max-width:700px){.mission-vault{width:68vw;right:-28vw;top:47%;opacity:.3}.mission-scene{width:100%}.mission-stage{background:#030a0688}.mission-scene h2{font-size:clamp(2.7rem,12vw,4.3rem)}.mission-overlay[data-scene="vault"] .mission-scene h2{font-size:clamp(2.8rem,10vw,4rem)}.vault-warning,.vault-machine-caption{display:none}.mission-topline>div{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.vault-dial,.vault-scan:after,.vault-warning i{animation:none!important}.vault-door,.vault-chamber{transition:none!important}}
+.mission-overlay[data-effects="off"] .vault-dial,.mission-overlay[data-effects="off"] .vault-scan:after,.mission-overlay[data-effects="off"] .vault-warning i,.mission-overlay[data-effects="off"] .mission-scene,.mission-overlay[data-effects="off"] .mission-terminal-line,.mission-overlay[data-effects="off"] .mission-terminal-line:before{animation:none!important}
+.mission-overlay[data-effects="off"] .mission-terminal-line{clip-path:none}.mission-overlay[data-effects="off"] .vault-door,.mission-overlay[data-effects="off"] .vault-chamber{transition:none!important}

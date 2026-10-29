@@ -29,6 +29,47 @@ Signal Integrity uses calibration investigation files and settling condition
 reports; the Heist uses a target/evidence board and authorization/dispatch desks.
 The theatrical copy is presentation, and scientific classifications remain
 explicit. Both modes use the same protected forms and validated evidence.
+
+### Operation Stolen Cycles
+
+Start the dashboard with `.venv/bin/python dashboard_app.py`, open
+`http://127.0.0.1:8501/research`, switch to **Hollywood Mode**, and select
+**Replay Experiment 003**. The replay reads the hash-validated historical
+diagnostic, creates no job or approval, and advances only when the viewer clicks.
+Its vault reports four passing checks, 6,912 identical executable bytes per
+kernel, and intentionally skipped runtime benchmarking for the tested
+configuration. If historical validation fails, replay is unavailable.
+
+For a live mission, select saved plan `20261028T145028833360Z`, click
+**Open Live Mission**, and review the briefing and clearance. Close the overlay
+to use the existing **Authorize the Operation** form. After approval, use the
+separate **Initiate the Heist** form. That protected submission starts the fixed
+trusted diagnostic and opens the mission at live dispatch after navigation.
+Closing the overlay never cancels the job. The vault opens only after a completed
+job has a validated memory entry; failed jobs and missing evidence get accurate
+reports. Live runs are workflow validation replays, not new independent research
+evidence. This manual live path can use the GPU; development and automated tests
+do not.
+
+Mission sound is off by default, with an opt-in mute control. Escape closes the
+overlay. Reduced-motion settings remove decorative animation. Cinematic terminal
+copy is labeled separately from the linked job record and execution logs.
+The vault dial, warning lamps, and scanning beam are decorative. The beam runs
+only for queued, running, or validating live jobs; replay labels its scan as an
+archive effect. **Skip effects** stops animation independently of the sound
+control. The briefing explains the proposed loop-check change, the clearance
+and dispatch explain the compiler/correctness checks, and the vault summarizes
+what validated evidence actually established. Compiler equivalence, confirmed
+improvement, measured screening slowdown, inconclusive evidence, and failed
+execution have separate endings. A completed job without validated evidence
+keeps the vault sealed.
+
+CPU checks: `.venv/bin/python -m pytest -q tests/test_mission.py`.
+Chromium scene and synthetic live-state checks: `NT_MISSION_BROWSER=chromium
+.venv/bin/python -m pytest -q tests/test_mission.py -k chromium`. The tests
+use saved or fixture evidence and launch no GPU code. Locked, scanning, and
+revealed screenshots are saved as `locked.png`, `scanning.png`, and
+`revealed.png` under `evaluations/dashboard-previews/operation-stolen-cycles/`.
 Approval and execution remain separate. No percentages or performance gains
 are simulated. Active job animations reflect only saved queued/running/validating
 states and stop under reduced-motion preferences.

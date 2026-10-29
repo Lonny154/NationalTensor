@@ -13,6 +13,26 @@
     <button class="action-button">View plan</button>
   </form>
 </section>
+<section class="panel" id="muse-debrief">
+  <div class="panel-head"><h2>Muse Research Debrief · Experiment 003</h2><span class="badge cyan">INTERPRETATION ONLY</span></div>
+  {% if muse_debrief_package %}
+  <p><b>Measured evidence:</b> Four correctness checks passed. Compiler resources, complete executable bytes, constants, and launch metadata match. Runtime screening was skipped because the proposed compiled mask-work mechanism left no meaningful compiler difference. No latency or speedup was measured.</p>
+  <p class="subtle">Evidence {{ muse_debrief_package.evidence_id }} · <a href="{{ url_for('research_evidence', evidence_id=muse_debrief_package.evidence_id) }}">Inspect verified artifact →</a></p>
+  {% if muse_debrief %}{% set interpretation = muse_debrief.interpretation %}
+  <h3>Muse interpretation</h3><p>{{ interpretation.technical_interpretation.text }}</p>
+  <p><b>Supporting evidence:</b> {{ interpretation.supporting_evidence.text }}</p>
+  <h3>Limitations and uncertainty</h3><p>{{ interpretation.limitations_uncertainties.text }}</p>
+  <h3>Recommended next research action</h3><p>{{ interpretation.recommended_next_action.text }}</p>
+  <p><b>For a nontechnical audience:</b> {{ interpretation.nontechnical_explanation.text }}</p>
+  <details><summary>Verified citation keys and saved Muse request</summary>
+    {% for key, value in interpretation.items() %}<p><b>{{ key|replace('_', ' ') }}:</b> {% for citation in value.citations %}{{ citation.evidence_id }} / {{ citation.observation_key }}{% if not loop.last %}; {% endif %}{% endfor %}</p>{% endfor %}
+    <p>Model: {{ muse_debrief.response_model }}</p><pre>{{ muse_debrief.prompt }}</pre><pre>{{ muse_debrief.raw_response }}</pre>
+  </details>
+  {% else %}<p>No accepted Muse interpretation has been saved.</p>
+  <form method="post" action="{{ url_for('request_muse_debrief') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button">Request one live Muse Research Debrief</button></form>
+  <p class="subtle">One explicit bounded request. This action does not run a GPU job or request another hypothesis.</p>{% endif %}
+  {% else %}<p>{{ muse_debrief_warning or 'Verified Experiment 003 evidence is unavailable.' }}</p>{% endif %}
+</section>
 {% if workflow_plan %}{% set plan = workflow_plan.plan %}
 <section class="panel"><div class="panel-head"><h2>{{ plan.research_question }}</h2><span class="status-pill neutral">{{ workflow_review.decision if workflow_review else 'Awaiting review' }}</span></div>
   <dl class="facts"><dt>Mechanism</dt><dd>{{ plan.optimization_mechanism }}</dd><dt>Hypothesis</dt><dd>{{ plan.technical_hypothesis }}</dd>

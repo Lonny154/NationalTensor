@@ -87,7 +87,7 @@
       const response = await fetch(panel.dataset.statusUrl, {cache: "no-store"});
       if (!response.ok) throw new Error("status unavailable");
       const current = await response.json();
-      if (state(current) !== state(initial)) window.location.reload();
+      if (state(current) !== state(initial) && !document.documentElement.hasAttribute("data-mission-active")) window.location.reload();
       if (!active(current)) window.clearInterval(timer);
     } catch (_) { window.clearInterval(timer); }
   }, 1500);
