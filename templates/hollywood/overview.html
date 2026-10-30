@@ -11,6 +11,8 @@
   </aside>
 </section>
 {{ sequence(mission) }}
-<div class="intel-heading"><div><div class="eyebrow">CLASSIFIED INTELLIGENCE</div><h2>Evidence survives the chase.</h2></div><a href="{{ url_for('home', view='timeline') }}">Open the mission archive →</a></div>
-<div class="dossier-grid">{% for item in mission_events %}{{ dossier(item, true) }}{% else %}<p>No verified activity is available.</p>{% endfor %}</div>
+<details class="progressive-section"><summary>Recent evidence dossiers</summary>
+  <div class="dossier-grid">{% for item in mission_events %}{{ dossier(item, true) }}{% else %}<p>No verified activity is available.</p>{% endfor %}</div>
+  <a href="{{ url_for('home', view='timeline') }}">Open the full timeline →</a>
+</details>
 <p class="cinema-footnote">Fictional operation. Actual research. No progress percentages, manufactured discoveries, or automatic execution.</p>

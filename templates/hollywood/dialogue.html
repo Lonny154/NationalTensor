@@ -1,0 +1,5 @@
+{% macro lines(text) -%}
+<div class="dialogue-lines">{% for turn in text|dialogue_lines %}
+  <p>{% if turn.speaker %}<strong>{{ turn.speaker }}</strong>{% endif %}<span>{{ turn.line }}</span></p>
+{% endfor %}</div>
+{%- endmacro %}

@@ -1,0 +1,35 @@
+<section class="panel" id="wild-research-lab" aria-labelledby="wild-lab-title">
+  <h2 id="wild-lab-title">Wild Research Lab</h2>
+  <p class="subtle">Three speculative GPU optimization concepts. Human review is required before any implementation.</p>
+  {% if wild_ideas %}
+    <div class="wild-lab-grid">
+      {% for idea in wild_ideas.ideas.ideas %}
+      <article class="wild-lab-card">
+        <span class="file-number">SPECULATIVE · {{ idea.category|replace('_', ' ') }}</span>
+        <h3>{{ idea.name }}</h3>
+        <p><b>Concept:</b> {{ idea.core_mechanism }}</p>
+        <p><b>Biggest obstacle:</b> {{ idea.biggest_obstacle }}</p>
+        <details><summary>Mechanism, assumptions, test and evidence</summary>
+          <dl class="facts">
+            <dt>Why it might work</dt><dd>{{ idea.why_it_might_work }}</dd>
+            <dt>What makes it unconventional</dt><dd>{{ idea.what_makes_it_unconventional }}</dd>
+            <dt>Necessary assumptions</dt><dd>{{ idea.necessary_assumptions }}</dd>
+            <dt>Disproof observation</dt><dd>{{ idea.disproof_observation }}</dd>
+            <dt>Smallest proof of concept</dt><dd>{{ idea.smallest_proof_of_concept }}</dd>
+            <dt>Numerical equivalence</dt><dd>{{ idea.numerical_equivalence }}</dd>
+          </dl>
+          <p><b>Verified context references:</b>
+          {% for ref in idea.evidence_references %}{{ ref.evidence_id }} / {{ ref.observation_key }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
+        </details>
+      </article>
+      {% endfor %}
+    </div>
+    <details><summary>Ideation audit and validated context</summary>
+      <p>Model {{ wild_ideas.response_model }} · Round {{ wild_ideas.round_id }} · Prompt version {{ wild_ideas.prompt_version }}</p>
+      <pre>{{ wild_context|tojson(indent=2) }}</pre>
+    </details>
+  {% elif wild_context %}
+    <p>No accepted ideation round yet. The verified context is ready for an explicit Muse request.</p>
+    <details><summary>Verified context</summary><pre>{{ wild_context|tojson(indent=2) }}</pre></details>
+  {% else %}<p>Verified ideation context is unavailable: {{ wild_warning }}</p>{% endif %}
+</section>

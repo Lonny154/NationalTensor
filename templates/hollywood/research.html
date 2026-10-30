@@ -1,11 +1,12 @@
 {% from 'hollywood/macros.html' import sequence %}
+{% from 'hollywood/dialogue.html' import lines %}
 <div class="mission-kicker"><span>NT / HUMAN AUTHORIZATION REQUIRED</span><span>THE HEIST · TRUSTED DIAGNOSTIC ONLY</span></div>
 <section class="heist-heading"><div><div class="eyebrow">MISSION BRIEFING / SAVED MUSE ADVISORY</div><h1>{{ mission.title }}</h1><p>{{ mission.narrative }}</p></div><a class="mission-cta" href="#{{ mission.anchor }}">{{ mission.action }} ↓</a></section>
 <div class="mission-entry" aria-label="Operation Stolen Cycles">
   <div><span class="file-number">OPERATION 003 / STOLEN CYCLES</span><p>The compiler is hiding something. Put the evidence under a very dramatic lamp.</p></div>
   <div class="mission-entry-actions">
     <button type="button" class="action-button" data-mission-open="live" {% if not workflow_plan %}disabled{% endif %}>Open Live Mission</button>
-    <button type="button" class="action-button" data-mission-open="replay" {% if not mission_replay %}disabled{% endif %}>Replay Experiment 003</button>
+    <button type="button" class="action-button secondary-action" data-mission-open="replay" {% if not mission_replay %}disabled{% endif %}>Replay Experiment 003</button>
   </div>
 </div>
 <div id="mission-overlay" class="mission-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="mission-title"
@@ -44,6 +45,24 @@
       <div class="mission-scene-body" id="mission-body"></div>
       <div class="mission-controls" id="mission-controls"></div>
     </div>
+    <aside class="mission-debrief" aria-label="Muse Research Debrief">
+      <div class="mission-eyebrow">MUSE RESEARCH DEBRIEF / EXPERIMENT 003</div>
+      {% if muse_debrief and muse_debrief_package %}{% set interpretation = muse_debrief.interpretation %}
+        <p><b>Accepted source:</b> {% if muse_debrief.prompt_version is defined %}{{ muse_debrief.prompt_version }} revision · original response {{ muse_debrief.source_response_id }}{% else %}Original Experiment 003 debrief{% endif %}</p>
+        <div class="fiction-label">Fictional dialogue · {{ muse_debrief.response_model }}</div>{{ lines(interpretation.hollywood_debrief.text) }}
+        <p><b>Verified observation:</b> Correctness checks passed and the compared executable and compiler resources matched. Runtime screening was skipped; no latency or speedup was measured.
+          <a href="{{ url_for('research_evidence', evidence_id=muse_debrief_package.evidence_id) }}">Inspect Experiment 003 evidence →</a></p>
+        <p><b>Muse interpretation:</b> {{ interpretation.technical_interpretation.text }}</p>
+        <p><b>Limitations:</b> {{ interpretation.limitations_uncertainties.text }}</p>
+        <p><b>Advisory next action for human review:</b> {{ interpretation.recommended_next_action.text }}</p>
+        <details><summary>Citations for every Muse section</summary>
+          {% if muse_debrief.prompt_version is defined %}<p>Revision audit: {{ muse_debrief.audit_path }}<br>Original accepted SHA-256: {{ muse_debrief.source_accepted_sha256 }}</p>{% endif %}
+          {% for key, value in interpretation.items() %}<p><b>{{ key|replace('_', ' ') }}:</b>
+            {% for citation in value.citations %}<a href="{{ url_for('research_evidence', evidence_id=citation.evidence_id) }}">{{ citation.evidence_id }} / {{ citation.observation_key }}</a>{% if not loop.last %}; {% endif %}{% endfor %}</p>{% endfor %}
+        </details>
+      {% elif muse_debrief_package %}<p>No accepted Muse debrief is available. Rejected or incomplete attempts remain in the audit and are never shown as accepted.</p>
+      {% else %}<p>{{ muse_debrief_warning or 'Verified Experiment 003 evidence is unavailable.' }}</p>{% endif %}
+    </aside>
     <footer class="mission-footer"><span>THEATRICAL DIALOGUE // VERIFIED DATA LABELED BELOW</span><span>ESC closes · Closing does not stop a job</span></footer>
   </div>
 </div>
@@ -52,25 +71,38 @@
   {% if muse_debrief_package %}<p><b>Measured evidence:</b> Four correctness checks passed; executable bytes, constants, launch metadata, and compiler resources matched. Runtime screening was skipped. No latency or speedup was measured.</p>
     <p><a href="{{ url_for('research_evidence', evidence_id=muse_debrief_package.evidence_id) }}">Inspect verified evidence →</a></p>
     {% if muse_debrief %}{% set interpretation = muse_debrief.interpretation %}
+      <div class="fiction-label">Theatrical dialogue · {{ muse_debrief.response_model }}</div>{{ lines(interpretation.hollywood_debrief.text) }}
       <p><b>Muse interpretation:</b> {{ interpretation.technical_interpretation.text }}</p>
-      <p><b>Supporting citations:</b> {% for citation in interpretation.technical_interpretation.citations %}{{ citation.evidence_id }} / {{ citation.observation_key }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
-      <p><b>Limitations:</b> {{ interpretation.limitations_uncertainties.text }}</p>
-      <p><b>Recommended research action:</b> {{ interpretation.recommended_next_action.text }}</p>
-      <p><b>Plain-language explanation:</b> {{ interpretation.nontechnical_explanation.text }}</p>
-      <blockquote><b>Theatrical dialogue · {{ muse_debrief.response_model }}:</b> {{ interpretation.hollywood_debrief.text }}</blockquote>
-      <p class="subtle">Dialogue is fiction. The technical findings above come from the verified Experiment 003 artifact.</p>
+      <p><b>Advisory next action:</b> {{ interpretation.recommended_next_action.text }}</p>
+      <details><summary>Limitations, plain-language explanation, and citations</summary>
+        <p>{{ interpretation.limitations_uncertainties.text }}</p><p>{{ interpretation.nontechnical_explanation.text }}</p>
+        {% for key, value in interpretation.items() %}<p><b>{{ key|replace('_', ' ') }}:</b> {% for citation in value.citations %}{{ citation.evidence_id }} / {{ citation.observation_key }}{% if not loop.last %}; {% endif %}{% endfor %}</p>{% endfor %}
+      </details>
+      <p class="subtle">Dialogue is fiction. Muse interpretation and advice require human review.</p>
     {% else %}<p>No Muse interpretation has been accepted yet.</p>
       <form method="post" action="{{ url_for('request_muse_debrief') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button">Request one live Muse Research Debrief</button></form>{% endif %}
   {% else %}<p>{{ muse_debrief_warning or 'Verified Experiment 003 evidence is unavailable.' }}</p>{% endif %}
 </section>
+<section class="panel" id="research-planning"><div class="eyebrow">EXPERIMENT 005 / ADVISORY RESEARCH PLAN</div><h2>What comes next?</h2>
+  {% if research_proposal %}
+  <p><b>What Muse learned:</b> {{ research_proposal.proposal.evidence_synthesis.text }}</p>
+  <p><b>What Muse proposes next:</b> {{ research_proposal.proposal.next_hypothesis.text }}</p>
+  <p><b>Why test it:</b> {{ research_proposal.proposal.research_rationale.text }}</p>
+  <p><b>Approval:</b> Pending human scientific review before implementation or execution.</p>
+  <details><summary>Full proposal, evidence, citations and baseline comparison</summary><pre>{{ research_proposal.proposal|tojson(indent=2) }}</pre><pre>{{ research_proposal.comparison|tojson(indent=2) }}</pre><pre>{{ research_package|tojson(indent=2) }}</pre><p>Schema checks do not establish scientific correctness.</p></details>
+  {% elif research_package %}<p>No accepted cross-experiment Muse proposal. Human approval is pending.</p><details><summary>Verified evidence and deterministic baseline</summary><pre>{{ research_package|tojson(indent=2) }}</pre></details>
+  {% else %}<p>Planning evidence unavailable: {{ research_warning }}</p>{% endif %}
+</section>
+{% include 'wild_research_lab.html' %}
+{% include 'hilbert_experiment_005.html' %}
 <div class="heist-board">
   <section class="heist-brief"><span class="file-number">THE TARGET</span><h2>{{ workflow_plan.plan.research_question if workflow_plan else 'No advisory plan selected.' }}</h2>
-    {% if workflow_plan %}<p>{{ workflow_plan.plan.technical_hypothesis }}</p><dl><dt>Proposed mechanism</dt><dd>{{ workflow_plan.plan.optimization_mechanism }}</dd><dt>Fixed workload</dt><dd>{{ workflow_plan.plan.target_shape_mnk|join(' × ') }} FP16</dd><dt>Plan SHA-256</dt><dd class="hash">{{ workflow_plan.plan_sha256 }}</dd></dl>{% endif %}
+    {% if workflow_plan %}<p>{{ workflow_plan.plan.technical_hypothesis }}</p><details><summary>Plan scope and identity</summary><dl><dt>Proposed mechanism</dt><dd>{{ workflow_plan.plan.optimization_mechanism }}</dd><dt>Fixed workload</dt><dd>{{ workflow_plan.plan.target_shape_mnk|join(' × ') }} FP16</dd><dt>Plan SHA-256</dt><dd class="hash">{{ workflow_plan.plan_sha256 }}</dd></dl></details>{% endif %}
     <p class="replay-note">This runner replays a compiler diagnostic for workflow validation. Runtime screening is excluded. A dramatic entrance cannot create independent research evidence.</p>
   </section>
   <aside class="authorization-console" id="authorization"><span class="file-number">THE HUMAN KEY</span><h2>Sign before stealing cycles.</h2><p>Approval binds the saved plan, fixed runner, source hashes, workload, and allowed phases. Execution is a second, separate action. Nobody gets to improvise Python during the chase.</p><div data-hollywood-slot="authorization"></div>{% if not workflow_plan %}<p>No plan is available for authorization.</p>{% endif %}</aside>
-  <section class="intelligence-desk"><span class="file-number">THE EVIDENCE BOARD</span><h2>Read the fine print on the treasure map.</h2><p>These citations are checked against saved research memory. A hypothesis is a clue, not a result.</p><div data-hollywood-slot="intelligence"></div></section>
-  <aside class="planning-desk" id="planning"><span class="file-number">THE MAP ROOM</span><p>Ask only when you mean it. A new advisory never starts execution.</p><div data-hollywood-slot="planning"></div></aside>
+  <details class="intelligence-desk"><summary>Verified prior evidence</summary><p>These citations are checked against saved research memory. A hypothesis is a clue, not a result.</p><div data-hollywood-slot="intelligence"></div></details>
+  <details class="planning-desk" id="planning" {% if mission.anchor == 'planning' %}open{% endif %}><summary>Planning controls</summary><p>A new advisory never starts execution.</p><div data-hollywood-slot="planning"></div></details>
 </div>
-<section class="dispatch-desk" id="dispatch"><div class="eyebrow">LIVE DISPATCH / PERSISTED JOB STATES</div><h2>The GPU does not work on movie time.</h2><p>Queued, running, validating, completed, or failed: the status comes from the real job record. No theatrical completion percentage is provided.</p><div data-hollywood-slot="dispatch"></div></section>
+<details class="dispatch-desk" id="dispatch" {% if mission.anchor == 'dispatch' %}open{% endif %}><summary>Saved dispatch and job status</summary><p>Job status comes from the saved record. No theatrical progress percentage is shown.</p><div data-hollywood-slot="dispatch"></div></details>
 {% if workflow_warnings %}<details class="panel warnings"><summary>Intelligence integrity notices</summary><ul>{% for warning in workflow_warnings %}<li>{{ warning }}</li>{% endfor %}</ul></details>{% endif %}

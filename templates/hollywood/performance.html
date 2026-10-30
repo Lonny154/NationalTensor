@@ -5,13 +5,14 @@
     <div class="vault-ratio"><span>RECORDED PAIRED SPEEDUP</span><strong>{{ measured.median_paired_speedup|ratio }}</strong><small>{{ 'Candidate faster in this run' if measured.median_paired_speedup > 1 else 'Candidate slower in this run' if measured.median_paired_speedup < 1 else 'Equal recorded ratio' }}</small></div>
     <div class="vault-receipt"><div class="eyebrow">{{ item.experiment_type }} / {{ item.date_label }}</div><h2><a href="{{ item.evidence_url }}">{{ item.title }}</a></h2>
       <p>{{ item.interpretation }} · {{ item.outcome|replace('_', ' ') }}</p>
+      <details><summary>Timing details and uncertainty</summary>
       <dl><div><dt>Baseline median</dt><dd>{{ measured.baseline_ms|ms }}</dd></div><div><dt>Candidate median</dt><dd>{{ measured.candidate_ms|ms }}</dd></div><div><dt>Workload M × N × K</dt><dd>{{ item.shape_mnk|join(' × ') }}</dd></div></dl>
       <div class="vault-uncertainty">{% for key, value in measured.uncertainty.items() %}
         {% if key == 'paired_ratio_mad' %}<span>Paired ratio MAD: {{ '%.5f'|format(value) }} (dimensionless)</span>
         {% elif key == 'noise_interpretation' %}<p>{{ value }}</p>
         {% else %}<span>{{ key|replace('_', ' ') }}: {{ value|pct }}</span>{% endif %}
       {% else %}<span>Variability not recorded in this summary; inspect the raw evidence.</span>{% endfor %}</div>
-      <details><summary>Uncertainty, protocol, and raw receipts</summary><p>{{ measured.method }}</p><p>These are saved paired results from one run. Absolute measurements are not pooled across runs. A favorable ratio can reflect measurement variability; this view makes no new significance claim.</p><a href="{{ item.evidence_url }}">Inspect recorded variability, A/A controls, and raw evidence →</a></details>
+      <p>{{ measured.method }}</p><p>These are saved paired results from one run. Absolute measurements are not pooled across runs. A favorable ratio can reflect measurement variability; this view makes no new significance claim.</p><a href="{{ item.evidence_url }}">Inspect recorded variability, A/A controls, and raw evidence →</a></details>
     </div>
   </article>{% else %}<p>No verified latency measurements are available.</p>{% endfor %}</div>
 <div class="unmeasured-locker"><b>THE UNOPENED DRAWER / NOT MEASURED</b><p>Compiler diagnostics and workflow replays without timings have no latency or speedup to deposit. Their evidence belongs in the <a href="{{ url_for('home', view='timeline', filter='compiler') }}">compiler dossiers</a>.</p></div>

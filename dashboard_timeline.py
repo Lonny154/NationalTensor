@@ -10,6 +10,7 @@ import re
 import statistics
 
 import experiment_memory
+from experiment_004_evidence import with_display_entries
 from dashboard_data import load_history
 from dashboard_interpretation import status_for
 from experiment_planner import load_saved_plans
@@ -141,7 +142,7 @@ def build_activity(root, *, history=None, memory=None):
     """No database or cache: every event is a projection of current validated evidence."""
     root = Path(root).resolve()
     history = load_history(root) if history is None else history
-    memory = experiment_memory.reconstruct(root) if memory is None else memory
+    memory = with_display_entries(root, experiment_memory.reconstruct(root) if memory is None else memory)
     warnings = list(memory["warnings"])
     raw_records = {row["id"]: row for row in history["timeline"]}
     source, functions = _current_sources(root)
@@ -163,7 +164,7 @@ def build_activity(root, *, history=None, memory=None):
                   "numeric_tuning_screening": "Two-slab pipeline stage reduction",
                   "profiling_study": "Reviewed-kernel profiling study",
                   "confirmation_history": "Grouped-M4 confirmation history"}
-        title = titles.get(kind, (raw or {}).get("label") or entry["hypothesis"])
+        title = entry.get("title") or titles.get(kind, (raw or {}).get("label") or entry["hypothesis"])
         evidence = {"kind": "experiment" if raw else "memory", "id": entry["id"], "artifact_path": entry["artifact_path"]}
         row = _event(entry["id"], entry["created_utc"], title,
                      "Workflow validation replay" if replay else kind.replace("_", " "),
