@@ -13,7 +13,7 @@ def evidence_summary(root, entry):
     source = evidence.get("source_identity") or {}
     workflow = evidence.get("workflow") or {}
     summary = {
-        "question": None, "hypothesis": entry.get("hypothesis"), "mechanism": entry.get("mechanism"),
+        "question": entry.get("question"), "hypothesis": entry.get("hypothesis"), "mechanism": entry.get("mechanism"),
         "approval": None, "job": None, "plan": None, "checks": [], "diagnostic": {},
         "workflow_validation": entry.get("workflow_validation") is True,
         "independent": entry.get("independent_research_evidence"), "warnings": [],
@@ -23,17 +23,27 @@ def evidence_summary(root, entry):
         "skip_reason": evidence.get("screening_skip_reason"),
         "tolerances": evidence.get("tolerances") or {},
         "executable": evidence.get("executable_section") or {},
+        "control_comparison": evidence.get("control_comparison"),
         "constant_metadata_identical": evidence.get("constant_data_and_launch_metadata_identical"),
         "correctness_cases": entry.get("correctness_cases") or evidence.get("correctness_cases"),
     }
     if evidence.get("artifact_hashes"):
         folder = Path(entry["artifact_path"]).parent
+        prefix = evidence.get("detail_prefix", "")
         for filename, target in (("correctness.json", "checks"), ("diagnostic.json", "diagnostic")):
             try:
-                data = json.loads(_read(root, str(folder / filename), evidence["artifact_hashes"][filename]))
+                relative = prefix + filename
+                data = json.loads(_read(root, str(folder / relative), evidence["artifact_hashes"][relative]))
                 summary[target] = data["checks"] if target == "checks" else data
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 summary["warnings"].append(f"Supporting {filename} unavailable: {exc}")
+        if prefix == "partial_m/":
+            try:
+                relative = "control/correctness.json"
+                control = json.loads(_read(root, str(folder / relative), evidence["artifact_hashes"][relative]))
+                summary["checks"] = control["checks"] + summary["checks"]
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                summary["warnings"].append(f"Supporting control correctness unavailable: {exc}")
     if workflow.get("job_id"):
         try:
             job = json.loads(_read(root, f"{SECTION}/jobs/{workflow['job_id']}/job.json"))
@@ -49,8 +59,8 @@ def evidence_summary(root, entry):
             plan = saved_plan(root, Path(plan_path).parent.name)
             if plan["plan_sha256"] != source["plan_sha256"]:
                 raise ValueError("plan identity differs from validated evidence")
-            summary.update(plan=plan, question=plan["plan"]["research_question"],
-                           hypothesis=plan["plan"]["technical_hypothesis"])
+            summary.update(plan=plan, question=summary["question"] or plan["plan"]["research_question"],
+                           hypothesis=summary["hypothesis"] or plan["plan"]["technical_hypothesis"])
         except (OSError, ValueError, KeyError, TypeError) as exc:
             summary["warnings"].append(f"Original advisory unavailable: {exc}")
     if summary["runtime_measured"] is None and entry.get("screening"):

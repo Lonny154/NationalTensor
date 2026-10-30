@@ -55,6 +55,20 @@ class MuseDebriefTests(unittest.TestCase):
         keys = {c["observation_key"] for field in schema.values() for c in field["citations"]}
         self.assertTrue({"correctness", "compiler_resources", "executable_comparison",
                          "scope_and_limitations", "screening"}.issubset(keys))
+        self.assertIn("absurd technological conspiracy thriller", prompt)
+        self.assertIn("fictional", prompt.lower())
+        self.assertEqual(muse_debrief.REQUEST_OPTIONS["max_output_tokens"], 8000)
+
+    def test_schema_requires_exactly_six_complete_sections(self):
+        response = valid_response(self.package)
+        for change in (lambda item: item.pop("hollywood_debrief"),
+                       lambda item: item.update({"seventh_section": {}}),
+                       lambda item: item["hollywood_debrief"].pop("citations"),
+                       lambda item: item["hollywood_debrief"].update({"text": "  "})):
+            invalid = copy.deepcopy(response)
+            change(invalid)
+            with self.assertRaises(ValueError):
+                muse_debrief.parse_response(json.dumps(invalid), self.package)
 
     def test_supported_message_structures_and_sdk_convenience_property(self):
         from openai.types.responses import Response
@@ -135,6 +149,10 @@ class MuseDebriefTests(unittest.TestCase):
             bad["technical_interpretation"]["citations"][0][key] = value
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, "citation"):
                 muse_debrief.parse_response(json.dumps(bad), self.package)
+        bad = copy.deepcopy(response)
+        bad["hollywood_debrief"]["citations"] *= 2
+        with self.assertRaisesRegex(ValueError, "duplicate citation"):
+            muse_debrief.parse_response(json.dumps(bad), self.package)
 
     def test_fabricated_number_and_runtime_claim_rejected(self):
         bad = valid_response(self.package)
@@ -147,6 +165,127 @@ class MuseDebriefTests(unittest.TestCase):
         bad["supporting_evidence"]["text"] = "The variant delivered a 4x speedup."
         with self.assertRaisesRegex(ValueError, "runtime"):
             muse_debrief.parse_response(json.dumps(bad), self.package)
+        bad = valid_response(self.package)
+        bad["hollywood_debrief"]["text"] = "Agent: The GPU delivered a 4x speedup!"
+        bad["hollywood_debrief"]["citations"] = [{"evidence_id": self.package["evidence_id"], "observation_key": "correctness"}]
+        with self.assertRaisesRegex(ValueError, "runtime"):
+            muse_debrief.parse_response(json.dumps(bad), self.package)
+
+    def test_loader_keeps_legacy_acceptance_and_rejects_incomplete_or_rejected(self):
+        saved = json.loads((ROOT / muse_debrief.SECTION / "accepted.json").read_text())
+        self.assertEqual(saved["prompt"], muse_debrief._prompt_for(self.package))
+        app = create_app(ROOT)
+        real_loader = muse_debrief.load_accepted
+        with tempfile.TemporaryDirectory() as temp:
+            fixture_root = Path(temp)
+            path = fixture_root / muse_debrief.SECTION / "accepted.json"
+            path.parent.mkdir(parents=True)
+            self.assertIsNone(real_loader(fixture_root, self.package))
+            path.write_text(json.dumps(saved))
+            self.assertIsNotNone(real_loader(fixture_root, self.package))
+            for change in (lambda item: item.update({"status": "rejected"}),
+                           lambda item: item["response_metadata"].update({"status": "incomplete"}),
+                           lambda item: item["response_metadata"].update({"incomplete_reason": "max_output_tokens"})):
+                invalid = copy.deepcopy(saved)
+                change(invalid)
+                path.write_text(json.dumps(invalid))
+                self.assertIsNone(real_loader(fixture_root, self.package))
+                with patch.object(muse_debrief, "load_accepted", side_effect=lambda root, package: real_loader(fixture_root, package)):
+                    page = app.test_client().get("/research").get_data(as_text=True)
+                self.assertIn("No accepted Muse debrief is available", page)
+                self.assertNotIn(saved["interpretation"]["hollywood_debrief"]["text"], page)
+
+    def test_cinematic_revision_is_isolated_idempotent_and_displayed(self):
+        original_bytes = (ROOT / muse_debrief.SECTION / "accepted.json").read_bytes()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            original_path = root / muse_debrief.SECTION / "accepted.json"
+            original_path.parent.mkdir(parents=True)
+            original_path.write_bytes(original_bytes)
+            revision_text = "Chief: The compiler has an alibi. Agent: Then who stole the clock cycles?"
+            response = valid_response(self.package)
+            response["hollywood_debrief"]["text"] = revision_text
+            client = Mock()
+            client.responses.create.return_value = SimpleNamespace(
+                status="completed", output_text=json.dumps(response), model=muse_debrief.MODEL,
+                id="revision-response")
+            with patch.object(muse_debrief, "evidence_package", return_value=self.package):
+                self.assertEqual(muse_debrief.request_cinematic_revision_once(client, root), "accepted")
+                self.assertEqual(muse_debrief.request_cinematic_revision_once(client, root), "already_accepted")
+                chosen = muse_debrief.load_display_accepted(root, self.package)
+            client.responses.create.assert_called_once_with(
+                model=muse_debrief.MODEL, input=muse_debrief.prompt_for(self.package),
+                **muse_debrief.REQUEST_OPTIONS)
+            self.assertEqual(original_path.read_bytes(), original_bytes)
+            self.assertEqual(chosen["interpretation"]["hollywood_debrief"]["text"], revision_text)
+            self.assertEqual(chosen["prompt_version"], muse_debrief.REVISION_VERSION)
+            self.assertEqual(chosen["source_accepted_sha256"], muse_debrief.digest(original_bytes))
+            self.assertEqual(chosen["source_response_id"], json.loads(original_bytes)["response_id"])
+            self.assertEqual(chosen["evidence_sha256"], muse_debrief.digest(muse_debrief.canonical(self.package)))
+            self.assertEqual(chosen["response_metadata"]["status"], "completed")
+            self.assertEqual(chosen["model"], muse_debrief.MODEL)
+            self.assertEqual(chosen["status"], "accepted")
+            revision_base = root / muse_debrief.SECTION / "revisions" / muse_debrief.REVISION_VERSION
+            self.assertEqual(len(list(revision_base.glob("*/audit.json"))), 1)
+            self.assertEqual(json.loads((revision_base / "accepted.json").read_text()), chosen)
+            app = create_app(ROOT)
+            with patch.object(muse_debrief, "load_cinematic_revision", return_value=chosen):
+                page = app.test_client().get("/research").get_data(as_text=True)
+            self.assertIn(revision_text, page)
+            self.assertIn("Accepted cinematic_v2 revision", page)
+            self.assertIn(chosen["source_response_id"], page)
+
+    def test_rejected_revision_never_replaces_original_and_fallback_survives_corruption(self):
+        original_bytes = (ROOT / muse_debrief.SECTION / "accepted.json").read_bytes()
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            original_path = root / muse_debrief.SECTION / "accepted.json"
+            original_path.parent.mkdir(parents=True)
+            original_path.write_bytes(original_bytes)
+            original = muse_debrief.load_accepted(root, self.package)
+            client = Mock()
+            client.responses.create.return_value = SimpleNamespace(
+                status="incomplete", incomplete_details={"reason": "max_output_tokens"},
+                output_text=json.dumps(valid_response(self.package)), model=muse_debrief.MODEL,
+                id="incomplete-revision")
+            with patch.object(muse_debrief, "evidence_package", return_value=self.package):
+                self.assertEqual(muse_debrief.request_cinematic_revision_once(client, root), "rejected")
+            revision_base = root / muse_debrief.SECTION / "revisions" / muse_debrief.REVISION_VERSION
+            audit = json.loads(next(revision_base.glob("*/audit.json")).read_text())
+            self.assertEqual(audit["prompt_version"], muse_debrief.REVISION_VERSION)
+            self.assertEqual(audit["status"], "rejected")
+            self.assertEqual(audit["rejection_kind"], "incomplete_output")
+            self.assertFalse((revision_base / "accepted.json").exists())
+            self.assertEqual(muse_debrief.load_display_accepted(root, self.package), original)
+            self.assertEqual(original_path.read_bytes(), original_bytes)
+            (revision_base / "accepted.json").write_text('{"status":"rejected"}')
+            self.assertEqual(muse_debrief.load_display_accepted(root, self.package), original)
+            app = create_app(ROOT)
+            with patch.object(muse_debrief, "load_cinematic_revision", return_value=None):
+                page = app.test_client().get("/research").get_data(as_text=True)
+            self.assertIn(original["interpretation"]["hollywood_debrief"]["text"], page)
+            self.assertNotIn("incomplete-revision", page)
+
+    def test_revision_requires_original_and_rejects_unsupported_claims(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            client = Mock()
+            with patch.object(muse_debrief, "evidence_package", return_value=self.package):
+                self.assertEqual(muse_debrief.request_cinematic_revision_once(client, root), "original_unavailable")
+            client.responses.create.assert_not_called()
+            self.assertFalse((root / muse_debrief.SECTION / "revisions").exists())
+            original_path = root / muse_debrief.SECTION / "accepted.json"
+            original_path.parent.mkdir(parents=True)
+            original_path.write_bytes((ROOT / muse_debrief.SECTION / "accepted.json").read_bytes())
+            bad = valid_response(self.package)
+            bad["hollywood_debrief"]["text"] = "Agent: We measured a 4x speedup."
+            client.responses.create.return_value = SimpleNamespace(
+                status="completed", output_text=json.dumps(bad), model=muse_debrief.MODEL,
+                id="bad-claim")
+            with patch.object(muse_debrief, "evidence_package", return_value=self.package):
+                self.assertEqual(muse_debrief.request_cinematic_revision_once(client, root), "rejected")
+            self.assertEqual(muse_debrief.load_display_accepted(root, self.package),
+                             muse_debrief.load_accepted(root, self.package))
 
     def test_invalid_model_response_is_audited_and_retry_can_succeed(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -218,9 +357,8 @@ class MuseDebriefTests(unittest.TestCase):
     def test_dashboard_both_modes_and_explicit_action(self):
         app = create_app(ROOT)
         page = app.test_client().get("/research").get_data(as_text=True)
-        self.assertIn("Request one live Muse Research Debrief", page)
+        self.assertNotIn("Request one live Muse Research Debrief", page)
         self.assertIn("No latency or speedup was measured", page)
-        self.assertIn("/research/muse-debrief", page)
         accepted = {"interpretation": valid_response(self.package), "response_model": muse_debrief.MODEL,
                     "prompt": muse_debrief.prompt_for(self.package), "raw_response": json.dumps(valid_response(self.package))}
         with patch.object(muse_debrief, "load_accepted", return_value=accepted):
@@ -228,6 +366,17 @@ class MuseDebriefTests(unittest.TestCase):
         self.assertIn("Muse interpretation", page)
         self.assertIn("Theatrical dialogue", page)
         self.assertIn("Limitations and uncertainty", page)
+        self.assertIn('class="mission-debrief"', page)
+        self.assertIn("Citations for every Muse section", page)
+        self.assertIn(accepted["interpretation"]["hollywood_debrief"]["text"], page)
+        self.assertIn("Advisory next action for human review", page)
+        self.assertIn("/research/evidence/", page)
+        with patch.object(muse_debrief, "load_accepted", return_value=None):
+            missing = app.test_client().get("/research").get_data(as_text=True)
+        self.assertIn("No accepted Muse debrief is available", missing)
+        self.assertIn("Request one live Muse Research Debrief", missing)
+        self.assertIn("/research/muse-debrief", missing)
+        self.assertNotIn(accepted["interpretation"]["hollywood_debrief"]["text"], missing)
 
 
 if __name__ == "__main__":

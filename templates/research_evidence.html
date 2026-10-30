@@ -4,15 +4,18 @@
   <a class="text-link back-link" href="{{ url_for('research') }}">← Research workflow</a>
   <div class="eyebrow">{{ label("VERIFIED MEMORY EVIDENCE", "CLASSIFIED INTELLIGENCE / MISSION DEBRIEF") }}</div>
   <h1>{{ evidence.question or 'Research evidence' }}</h1>
-  <p class="path">{{ workflow_entry.id }}</p>
+  <p><strong>Recorded outcome:</strong> {{ workflow_entry.outcome|replace('_', ' ') }}. <strong>Runtime:</strong> {{ 'Measured' if evidence.runtime_measured == true else 'Not measured' }}.</p>
+  <p>{{ workflow_entry.performance_interpretation }}</p>
+  {% if evidence.control_comparison %}<p>Control M=128: {{ 'matching' if evidence.control_comparison.executable_identical else 'different' }} executable sections. Partial M=130: {{ 'matching' if evidence.executable.identical else 'different' }} executable sections. No latency was measured.</p>{% endif %}
   {% if evidence.workflow_validation %}
   <div class="callout"><b>Workflow validation — not independent research evidence</b>
     <p>This run checks the controlled workflow by replaying an existing experiment. It does not count as a new independent research result or additional performance confirmation.</p></div>
   {% elif evidence.independent == true %}<span class="badge cyan">INDEPENDENT RESEARCH EVIDENCE</span>
   {% else %}<span class="badge muted">SAVED RESEARCH EVIDENCE</span>{% endif %}
 </section>
+<details class="progressive-section"><summary>Inspect correctness, compiler, and provenance details</summary>
 <div class="two-column">
-  <section class="panel"><div class="panel-head"><h2>Original Muse hypothesis</h2><span class="badge cyan">HYPOTHESIS</span></div>
+  <section class="panel"><div class="panel-head"><h2>{{ 'Experiment question' if evidence.control_comparison else 'Original Muse hypothesis' }}</h2><span class="badge cyan">HYPOTHESIS</span></div>
     <p>{{ evidence.hypothesis or 'Not recorded.' }}</p>
     <dl class="facts"><dt>Mechanism</dt><dd>{{ evidence.mechanism or 'Not recorded.' }}</dd>
       <dt>Workload</dt><dd>{{ workflow_entry.shape_mnk|join(' × ') }} {{ workflow_entry.dtype|upper }}</dd>
@@ -76,4 +79,5 @@
 {% if evidence.warnings %}<section class="panel warnings"><h2>Summary details unavailable</h2><ul>{% for warning in evidence.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></section>{% endif %}
 <details class="panel" id="raw-evidence"><summary>Complete raw evidence JSON</summary>
   <pre>{{ workflow_entry|tojson(indent=2) }}</pre>
+</details>
 </details>

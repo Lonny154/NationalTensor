@@ -1,0 +1,134 @@
+{
+  "P01": {
+    "novelty": {
+      "score": 1,
+      "justification": "Mask hoisting is an established optimization and overlaps an earlier compiler-equivalence diagnostic."
+    },
+    "mechanism_specificity": {
+      "score": 3,
+      "justification": "The invariant boundary-mask mechanism and possible compiler normalization are described clearly, but no code-level distinction is pinned down."
+    },
+    "falsifiability": {
+      "score": 3,
+      "justification": "A fixed-control latency comparison is possible, but a null latency outcome alone does not isolate redundant predicate work."
+    },
+    "evidence_alignment": {
+      "score": 2,
+      "justification": "Earlier shared context reports compiler equivalence for a reviewed mask-hoisting variant; the proposal gives no reason this variant differs."
+    },
+    "implementation_cost": {
+      "score": 5,
+      "justification": "A source-level mask rewrite and compiler inspection should be inexpensive to implement and assess."
+    }
+  },
+  "P02": {
+    "novelty": {
+      "score": 2,
+      "justification": "Separating full and edge tiles is a familiar kernel-specialization strategy, with limited novelty here."
+    },
+    "mechanism_specificity": {
+      "score": 3,
+      "justification": "The main-path predicate-removal mechanism is concrete, but its applicability to the proposed shape is questionable."
+    },
+    "falsifiability": {
+      "score": 3,
+      "justification": "A fixed-shape timing comparison is executable, but a compiler comparison and a shape with actual edge tiles would be more discriminating."
+    },
+    "evidence_alignment": {
+      "score": 2,
+      "justification": "The proposed 128x3072x768 output grid is divisible by 64x128 tiles, leaving no partial M or N output tiles under the shared configuration."
+    },
+    "implementation_cost": {
+      "score": 4,
+      "justification": "A full-tile versus edge-specialized kernel comparison is manageable, though it needs a more appropriate shape and correctness tests."
+    }
+  },
+  "P03": {
+    "novelty": {
+      "score": 2,
+      "justification": "Grouped cache-aware traversal is a well-known GPU scheduling technique, despite the cross-disciplinary analogy."
+    },
+    "mechanism_specificity": {
+      "score": 4,
+      "justification": "Weight-tile reuse, L2 residence, and launch ordering form a reasonably specific mechanism with explicit assumptions."
+    },
+    "falsifiability": {
+      "score": 4,
+      "justification": "The proposal includes both matched latency and L2 hit behavior, allowing a useful check of the locality explanation."
+    },
+    "evidence_alignment": {
+      "score": 3,
+      "justification": "The shared context does not establish a scheduling bottleneck; the proposal is plausible but not grounded in measured L2 pressure."
+    },
+    "implementation_cost": {
+      "score": 4,
+      "justification": "A grouped-versus-raster tile mapping with fixed kernel dimensions is relatively tractable, including correctness and profiling."
+    }
+  },
+  "P04": {
+    "novelty": {
+      "score": 2,
+      "justification": "Stream-K and split-K work redistribution are established GEMM approaches, although they can be substantial engineering changes."
+    },
+    "mechanism_specificity": {
+      "score": 4,
+      "justification": "SM utilization, work quantization, and partial-sum reduction costs are identified as concrete competing mechanisms."
+    },
+    "falsifiability": {
+      "score": 3,
+      "justification": "Matched latency is testable, but the claimed exact numerical equivalence is questionable when reduction order changes."
+    },
+    "evidence_alignment": {
+      "score": 3,
+      "justification": "No provided utilization evidence establishes that SM work imbalance is material for the nominated workload."
+    },
+    "implementation_cost": {
+      "score": 2,
+      "justification": "Cooperative K splitting and deterministic final reduction require significant implementation and numerical-validation work."
+    }
+  },
+  "P05": {
+    "novelty": {
+      "score": 3,
+      "justification": "Persistent workers with stationary weight slabs are a distinct but not unprecedented optimization direction."
+    },
+    "mechanism_specificity": {
+      "score": 4,
+      "justification": "The proposed shared-memory weight retention and cross-row reuse mechanism is clear, although a residency model is missing."
+    },
+    "falsifiability": {
+      "score": 4,
+      "justification": "A matched persistent-versus-nonpersistent latency test can falsify a performance benefit, especially with additional traffic counters."
+    },
+    "evidence_alignment": {
+      "score": 3,
+      "justification": "The idea is technically plausible but does not cite measured weight-reload traffic or a demonstrated reuse limit."
+    },
+    "implementation_cost": {
+      "score": 2,
+      "justification": "Persistent scheduling, shared-memory constraints, and synchronization demand substantial engineering and profiling."
+    }
+  },
+  "P06": {
+    "novelty": {
+      "score": 3,
+      "justification": "Traffic-platooning is a creative framing, but the substantive mechanism overlaps conventional grouped tile dispatch."
+    },
+    "mechanism_specificity": {
+      "score": 3,
+      "justification": "Spatial grouping and possible L2 reuse are described, yet the exact grouping policy and hardware execution relationship are underspecified."
+    },
+    "falsifiability": {
+      "score": 4,
+      "justification": "The stated matched latency and L2 locality comparisons provide observable criteria for testing the proposal."
+    },
+    "evidence_alignment": {
+      "score": 3,
+      "justification": "It acknowledges uncertainty about physical CTA order, but offers no measured evidence that dispatch order limits reuse."
+    },
+    "implementation_cost": {
+      "score": 4,
+      "justification": "A tile-map transformation with coverage checks and matched profiling is relatively easy to prototype."
+    }
+  }
+}

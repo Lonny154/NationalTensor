@@ -1,4 +1,6 @@
-# Day 2 research console
+# National Tensor research dashboard
+
+The Day 4 reading layout keeps the same routes and verified records. Each page leads with one question and a clear next step. Totals, timing tables, citations, hashes, and raw artifacts remain available through labeled expandable sections and evidence links. Research Mode and Hollywood Mode share the same five navigation labels. The cinematic Muse debrief renders each character turn on its own line while keeping verified observations, Muse interpretation, and fiction distinct. Keyboard focus and reduced-motion preferences are supported by the shared styles.
 
 The dashboard reads the checkpointed files under `evaluations/` and
 `docs/day2_checkpoint.md`. An explicit **Request one hypothesis** action can

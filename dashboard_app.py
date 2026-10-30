@@ -25,6 +25,9 @@ from experiment_planner import load_saved_plans
 from kernel_evolution import MODEL as PROPOSAL_MODEL
 from research_workflow import WorkflowManager, RUNNER_ID, binding
 import muse_debrief
+import muse_research_plan
+import muse_wild_lab
+import experiment_005_evidence
 
 
 ALLOWED_HOSTS = {"127.0.0.1", "127.0.0.1:8501", "localhost", "localhost:8501"}
@@ -50,6 +53,21 @@ def _fmt_pct(value):
     if isinstance(value, (int, float)) and math.isfinite(value):
         return f"{value * 100:.2f}%"
     return "—"
+
+
+def _dialogue_lines(value):
+    """Split visible character cues for display; leave saved Muse text untouched."""
+    text = value if isinstance(value, str) else ""
+    cues = list(re.finditer(r"(?<!\S)([A-Za-z][A-Za-z ]{1,28}):\s*", text))
+    if not cues:
+        return [{"speaker": None, "line": text}]
+    lines = []
+    if text[:cues[0].start()].strip():
+        lines.append({"speaker": None, "line": text[:cues[0].start()].strip()})
+    for index, cue in enumerate(cues):
+        end = cues[index + 1].start() if index + 1 < len(cues) else len(text)
+        lines.append({"speaker": cue.group(1), "line": text[cue.end():end].strip()})
+    return lines
 
 
 def _sample_chart(timing: dict | None) -> dict | None:
@@ -197,6 +215,7 @@ def create_app(root: Path = ROOT) -> Flask:
     app.jinja_env.filters["ms"] = _fmt_ms
     app.jinja_env.filters["ratio"] = _fmt_ratio
     app.jinja_env.filters["pct"] = _fmt_pct
+    app.jinja_env.filters["dialogue_lines"] = _dialogue_lines
 
     @app.before_request
     def validate_local_request():
@@ -353,10 +372,24 @@ def create_app(root: Path = ROOT) -> Flask:
         historical = next((row for row in memory["entries"] if row["id"] == HISTORICAL_ID), None)
         try:
             debrief_package = muse_debrief.evidence_package(root)
-            debrief = muse_debrief.load_accepted(root, debrief_package)
+            original_debrief = muse_debrief.load_accepted(root, debrief_package)
+            debrief = muse_debrief.load_cinematic_revision(root, debrief_package) or original_debrief
             debrief_warning = None
         except ValueError as exc:
             debrief_package, debrief, debrief_warning = None, None, str(exc)
+        try:
+            research_package = muse_research_plan.evidence_package(root)
+            research_proposal = muse_research_plan.load_accepted(root, research_package)
+            research_warning = None
+        except ValueError as exc:
+            research_package, research_proposal, research_warning = None, None, str(exc)
+        try:
+            wild_context = muse_wild_lab.context_package(root)
+            wild_ideas = muse_wild_lab.load_accepted(root, wild_context)
+            wild_warning = None
+        except ValueError as exc:
+            wild_context, wild_ideas, wild_warning = None, None, str(exc)
+        hilbert_result = experiment_005_evidence.latest(root)
         return render_template("dashboard.html", view="research", csrf_token=session["csrf_token"],
             workflow_plans=plans, workflow_plan=selected_plan, workflow_review=review,
             workflow_binding=eligibility, workflow_blocked=blocked, workflow_evidence=evidence,
@@ -364,11 +397,15 @@ def create_app(root: Path = ROOT) -> Flask:
             workflow_runner=RUNNER_ID,
             mission_replay=mission_evidence(root, historical) if historical else None,
             muse_debrief=debrief, muse_debrief_package=debrief_package, muse_debrief_warning=debrief_warning,
+            research_package=research_package, research_proposal=research_proposal, research_warning=research_warning,
+            wild_context=wild_context, wild_ideas=wild_ideas, wild_warning=wild_warning,
+            hilbert_result=hilbert_result,
             mission=mission_state(selected_plan, review, state, blocked, {row["id"]: row for row in memory["entries"]}))
 
     @app.get("/research/evidence/<path:evidence_id>")
     def research_evidence(evidence_id):
-        memory = experiment_memory.reconstruct(root)
+        from experiment_004_evidence import with_display_entries
+        memory = with_display_entries(root, experiment_memory.reconstruct(root))
         entry = next((row for row in memory["entries"] if row["id"] == evidence_id), None)
         if entry is None:
             abort(404)

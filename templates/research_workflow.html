@@ -1,8 +1,11 @@
-<section class="intro"><div class="eyebrow">CONTROLLED RESEARCH</div><h1>{{ label("Plan, review, then execute.", "Every heist starts with a hypothesis.") }}</h1>
-  <p>One trusted compiler diagnostic is registered: mask hoisting on 128 × 3072 × 768 FP16. Replays are labeled workflow validation. Compiler diagnosis and four correctness checks are allowed; runtime screening is excluded.</p>
+<section class="intro"><h1>What is the next research step?</h1>
+  <p>Review the saved plan, then decide whether to authorize the fixed diagnostic. Runtime screening is excluded.</p>
+  {% if mission.anchor == 'dispatch' %}<a class="primary-link" href="#workflow-jobs">Inspect saved job →</a>
+  {% elif workflow_plan %}<a class="primary-link" href="#current-plan">Review current plan →</a>
+  {% else %}<a class="primary-link" href="#workflow-status">Open planning controls →</a>{% endif %}
 </section>
-<section class="panel" id="workflow-status" data-hollywood-source="planning" data-status-url="{{ url_for('research_status') }}" data-snapshot="{{ workflow_state|tojson|forceescape }}">
-  <div class="panel-head"><h2>{{ label("Muse advisory planning", "Decode the Next Clue") }}</h2><span class="badge cyan">ADVISORY ONLY</span></div>
+<details class="panel" id="workflow-status" data-hollywood-source="planning" data-status-url="{{ url_for('research_status') }}" data-snapshot="{{ workflow_state|tojson|forceescape }}" {% if not workflow_plan or mission.anchor == 'planning' %}open{% endif %}>
+  <summary>Muse advisory planning</summary>
   <p>Request one advisory plan from verified experiment memory. Planning and generated kernel-source proposals are separate actions. A new plan never starts execution.</p>
   <form method="post" action="{{ url_for('request_advisory') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button class="action-button" {% if workflow_state.planning.status == 'requesting' %}disabled{% endif %}>{{ label("Request one advisory plan", "Decode the Next Clue") }}</button>
@@ -12,13 +15,32 @@
     <select name="plan" id="plan-select">{% for saved in workflow_plans|reverse %}<option value="{{ saved.run_id }}" {% if workflow_plan and saved.run_id == workflow_plan.run_id %}selected{% endif %}>{{ saved.run_id }} · {{ saved.plan.experiment_kind }}</option>{% endfor %}</select>
     <button class="action-button">View plan</button>
   </form>
+</details>
+<section class="panel" id="research-planning"><h2>Experiment 005 research planning</h2>
+  {% if research_proposal %}
+    <p><b>What Muse learned:</b> {{ research_proposal.proposal.evidence_synthesis.text }}</p>
+    <p><b>What Muse proposes next:</b> {{ research_proposal.proposal.next_hypothesis.text }}</p>
+    <p><b>Why test it:</b> {{ research_proposal.proposal.research_rationale.text }}</p>
+    <p><b>Approval:</b> Pending human scientific review before implementation or execution.</p>
+    <details><summary>Full proposal, evidence, citations and baseline comparison</summary>
+      <pre>{{ research_proposal.proposal|tojson(indent=2) }}</pre>
+      <pre>{{ research_proposal.comparison|tojson(indent=2) }}</pre>
+      <pre>{{ research_package|tojson(indent=2) }}</pre>
+      <p>Schema and citation checks do not establish scientific correctness. Review causal claims, feasibility, and whether the controls isolate the hypothesis.</p>
+    </details>
+  {% elif research_package %}<p>No accepted cross-experiment Muse proposal. Human approval is pending.</p>
+    <details><summary>Verified evidence and deterministic baseline</summary><pre>{{ research_package|tojson(indent=2) }}</pre></details>
+  {% else %}<p>Planning evidence unavailable: {{ research_warning }}</p>{% endif %}
 </section>
-<section class="panel" id="muse-debrief">
-  <div class="panel-head"><h2>Muse Research Debrief · Experiment 003</h2><span class="badge cyan">INTERPRETATION ONLY</span></div>
+{% include 'wild_research_lab.html' %}
+{% include 'hilbert_experiment_005.html' %}
+<details class="panel" id="muse-debrief">
+  <summary>Muse Research Debrief · Experiment 003</summary>
   {% if muse_debrief_package %}
   <p><b>Measured evidence:</b> Four correctness checks passed. Compiler resources, complete executable bytes, constants, and launch metadata match. Runtime screening was skipped because the proposed compiled mask-work mechanism left no meaningful compiler difference. No latency or speedup was measured.</p>
   <p class="subtle">Evidence {{ muse_debrief_package.evidence_id }} · <a href="{{ url_for('research_evidence', evidence_id=muse_debrief_package.evidence_id) }}">Inspect verified artifact →</a></p>
   {% if muse_debrief %}{% set interpretation = muse_debrief.interpretation %}
+  <p class="subtle">{% if muse_debrief.prompt_version is defined %}Accepted {{ muse_debrief.prompt_version }} revision · original response {{ muse_debrief.source_response_id }} · revision audit {{ muse_debrief.audit_path }}{% else %}Original accepted Experiment 003 debrief{% endif %}</p>
   <h3>Muse interpretation</h3><p>{{ interpretation.technical_interpretation.text }}</p>
   <p><b>Supporting evidence:</b> {{ interpretation.supporting_evidence.text }}</p>
   <h3>Limitations and uncertainty</h3><p>{{ interpretation.limitations_uncertainties.text }}</p>
@@ -32,9 +54,11 @@
   <form method="post" action="{{ url_for('request_muse_debrief') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button">Request one live Muse Research Debrief</button></form>
   <p class="subtle">One explicit bounded request. This action does not run a GPU job or request another hypothesis.</p>{% endif %}
   {% else %}<p>{{ muse_debrief_warning or 'Verified Experiment 003 evidence is unavailable.' }}</p>{% endif %}
-</section>
+</details>
 {% if workflow_plan %}{% set plan = workflow_plan.plan %}
-<section class="panel"><div class="panel-head"><h2>{{ plan.research_question }}</h2><span class="status-pill neutral">{{ workflow_review.decision if workflow_review else 'Awaiting review' }}</span></div>
+<section class="panel" id="current-plan"><div class="panel-head"><h2>{{ plan.research_question }}</h2><span class="status-pill neutral">{{ workflow_review.decision if workflow_review else 'Awaiting review' }}</span></div>
+  <p>Fixed compiler diagnostic and correctness checks only. Human approval and execution are separate decisions.</p>
+  <details><summary>Plan details and verified prior evidence</summary>
   <dl class="facts"><dt>Mechanism</dt><dd>{{ plan.optimization_mechanism }}</dd><dt>Hypothesis</dt><dd>{{ plan.technical_hypothesis }}</dd>
     <dt>Workload</dt><dd>{{ plan.target_shape_mnk|join(' × ') }} FP16</dd><dt>Plan SHA-256</dt><dd class="hash">{{ workflow_plan.plan_sha256 }}</dd>
     <dt>Correctness plan</dt><dd>{{ plan.correctness_plan }}</dd><dt>Measurement plan</dt><dd>{{ plan.measurement_plan }}</dd></dl>
@@ -43,6 +67,7 @@
     {% if evidence.id %}<a href="{{ url_for('research_evidence', evidence_id=evidence.id) }}">{{ evidence.label }}</a>{% else %}{{ evidence.label }}{% endif %}<br>
     {{ evidence.why_relevant }}<br>{{ evidence.performance or '' }} · {{ evidence.correctness or '' }}<br><span class="path">{{ evidence.artifact_path }}</span></p></div>{% endfor %}
   </div>
+  </details>
   <div class="shared-workflow-block" data-hollywood-source="authorization">
   {% if workflow_binding %}<div class="callout"><b>Approve one workflow validation run</b>
     <p>Registered runner {{ workflow_runner }}. Fixed 64 × 128 × 32 tiles, four warps, three stages. Approval covers compiler diagnosis and correctness only. Execution remains a separate action.</p></div>
@@ -51,7 +76,7 @@
   {% if workflow_blocked %}<p class="measurement-note">{{ workflow_blocked }}</p>{% endif %}
   {% if not workflow_review %}
     {% if workflow_binding and not workflow_blocked %}<form method="post" action="{{ url_for('research_action', run_id=workflow_plan.run_id, action='approve') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button">{{ label("Approve fixed diagnostic", "Authorize the Operation") }}</button></form>{% endif %}
-    <form method="post" action="{{ url_for('research_action', run_id=workflow_plan.run_id, action='reject') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button">Reject execution</button></form>
+    <form method="post" action="{{ url_for('research_action', run_id=workflow_plan.run_id, action='reject') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button secondary-action">Reject execution</button></form>
   {% elif workflow_review.decision == 'approved' and not workflow_blocked %}
     {% set prior_jobs = workflow_state.jobs|selectattr('plan_run_id', 'equalto', workflow_plan.run_id)|list %}
     {% if not prior_jobs %}<form method="post" action="{{ url_for('research_action', run_id=workflow_plan.run_id, action='execute') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="action-button" {% if workflow_state.jobs|selectattr('status', 'in', ['queued', 'running', 'validating'])|list %}disabled{% endif %}>{{ label("Execute approved diagnostic", "Initiate the Heist") }}</button></form>{% endif %}
@@ -59,11 +84,11 @@
   </div>
 </section>
 {% endif %}
-<section class="panel" data-hollywood-source="dispatch"><h2>{{ label("Persistent experiment jobs", "Operation Dispatch") }}</h2>
+<details class="panel" id="workflow-jobs" data-hollywood-source="dispatch" {% if mission.anchor == 'dispatch' %}open{% endif %}><summary>{{ label("Persistent experiment jobs", "Operation Dispatch") }}</summary>
 {% for job in workflow_state.jobs %}<div class="evidence-line mission-job" data-job-state="{{ job.status }}"><b>{{ job.status|upper }}</b><div><p>{{ job.id }} · workflow validation replay<br>Plan {{ job.plan_run_id }} · {{ job.created_utc }}</p>
   {% if job.error %}<p class="measurement-note">{{ job.error }}</p>{% endif %}
   {% if job.status == 'completed' %}<p>{{ job.outcome }} · Runtime not measured.</p><a href="{{ url_for('research_evidence', evidence_id=job.memory_id) }}">Inspect validated evidence in persistent memory →</a>{% endif %}
   <p><a href="{{ url_for('research_log', job_id=job.id, name='job.json') }}">Job record</a> · <a href="{{ url_for('research_log', job_id=job.id, name='stdout.log') }}">Execution log</a> · <a href="{{ url_for('research_log', job_id=job.id, name='stderr.log') }}">Error log</a></p>
 </div></div>{% else %}<p>No execution jobs. Approving or requesting a plan does not create a GPU job.</p>{% endfor %}
-</section>
+</details>
 {% if workflow_warnings %}<section class="panel warnings"><h2>Evidence warnings</h2><ul>{% for warning in workflow_warnings %}<li>{{ warning }}</li>{% endfor %}</ul></section>{% endif %}

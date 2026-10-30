@@ -1,0 +1,20 @@
+<section class="panel" id="experiment-005" aria-labelledby="experiment-005-title">
+  <h2 id="experiment-005-title">Experiment 005 · Hilbert Tile Traversal</h2>
+  <p>Can Hilbert tile traversal improve cache locality or execution performance versus row-major and grouped scheduling?</p>
+  <p><b>Strategies:</b> Row-major · Grouped M4 · Hilbert</p>
+  {% if hilbert_result %}
+    <p><b>Correctness:</b> All {{ hilbert_result.verify.correctness|length }} recorded shape, seed, and strategy checks passed.</p>
+    <p><b>Best supported result:</b> {{ hilbert_result.best_supported_result or 'None yet. Compiler observations do not establish latency or cache benefit.' }}</p>
+    <p><b>Hypothesis:</b> {{ hilbert_result.hypothesis_support }}</p>
+    <details><summary>Raw timings, compiler evidence, mapping and proposal provenance</summary>
+      <p>Run {{ hilbert_result.run_id }} · All workloads are representative GEMMs.</p>
+      <pre>{{ hilbert_result.verify|tojson(indent=2) }}</pre>
+      {% if hilbert_result.screening %}<h3>Screening · unconfirmed</h3><pre>{{ hilbert_result.screening|tojson(indent=2) }}</pre>{% endif %}
+      {% if hilbert_result.confirmation %}<h3>Independent confirmation</h3><pre>{{ hilbert_result.confirmation|tojson(indent=2) }}</pre>{% endif %}
+    </details>
+  {% else %}
+    <p><b>Correctness:</b> Awaiting explicit verification.</p>
+    <p><b>Best supported result:</b> None yet.</p>
+    <p><b>Hypothesis:</b> Untested.</p>
+  {% endif %}
+</section>

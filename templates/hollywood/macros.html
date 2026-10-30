@@ -17,10 +17,9 @@
     {% elif item.interpretation == 'Confirmed' %}<div class="case-verdict">CONFIRMED PERFORMANCE EVIDENCE</div><h3>We found it. The missing cycles.</h3>
     {% else %}<div class="case-verdict">RECORDED INTELLIGENCE</div><h3>Another clue enters the file.</h3>{% endif %}
     <h4><a href="{{ item.evidence_url }}">{{ item.title }}</a></h4>
-    <p>{{ item.interpretation or item.description or 'Inspect the saved record for the scope of this evidence.' }}</p>
     <div class="case-facts"><span>{{ item.outcome|replace('_', ' ') }}</span><span>{{ item.measurement_label }}</span>{% if item.correctness %}<span>Correctness: {{ item.correctness }}</span>{% endif %}</div>
     {% if item.workflow_validation %}<p class="replay-note">Replay only. Not independent research evidence or additional confirmation.</p>{% endif %}
-    {% if not compact and item.description %}<details><summary>Technical briefing</summary><p>{{ item.description }}</p><p class="path">{{ item.artifact_path }}</p></details>{% endif %}
+    <details><summary>Why this record matters</summary><p>{{ item.interpretation or item.description or 'Inspect the saved record for the scope of this evidence.' }}</p>{% if not compact and item.description %}<p>{{ item.description }}</p><p class="path">{{ item.artifact_path }}</p>{% endif %}</details>
     <a class="case-link" href="{{ item.evidence_url }}">Open evidence dossier ↗</a>
   </div>
 </article>

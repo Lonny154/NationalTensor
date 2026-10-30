@@ -14,6 +14,14 @@ Request the first live debrief explicitly:
 .venv/bin/python muse_debrief.py --request-from-muse
 ```
 
+To request one Day 4 cinematic revision after the original is accepted, run:
+
+```bash
+.venv/bin/python muse_debrief.py --request-cinematic-revision
+```
+
+This explicit command uses the same verified Experiment 003 evidence and the improved cinematic prompt. It makes at most one API call. The `cinematic_v2` prompt version has its own `revisions/cinematic_v2/<UTC timestamp>/audit.json` attempts and `revisions/cinematic_v2/accepted.json` pointer. Each attempt records the prompt version, evidence hash, model, safe response metadata, status, original response ID, and SHA-256 of the original accepted record. An accepted revision makes later invocations return `already_accepted`; a rejected or incomplete attempt leaves the original display intact. The original `accepted.json` and historical audits are never written by this command.
+
 Or open the dashboard's **Research workflow** tab and select **Request one live Muse Research Debrief**. The command or button requires `MODEL_API_KEY` (loaded from `.env` if present). It makes at most one API call with a 30-second timeout and no SDK retries. A hash-verified accepted debrief prevents repeat calls. Rejected attempts can be retried by an explicit request.
 
 Requests use `reasoning.effort: low` and an 8,000-token output limit, which covers private reasoning plus visible JSON. These fixed settings are saved in the audit. The limit does not guarantee a complete response; incomplete results are rejected without retrying automatically. See [Meta's reasoning documentation](https://dev.meta.ai/docs/reasoning).
@@ -21,6 +29,10 @@ Requests use `reasoning.effort: low` and an 8,000-token output limit, which cove
 Each attempt is saved under `evaluations/muse-research-debrief/<UTC timestamp>/audit.json`, including the exact prompt, raw response, reported model identity, and rejection reason or accepted interpretation. An accepted record is also saved as `accepted.json`. The response must contain six bounded text fields with citations to the supplied evidence ID and observation keys. Invalid references, malformed responses, unsupported numerals, and claims of measured runtime benefit are rejected. Citation validation is structural; prose remains Muse interpretation and should be read as such.
 
 Research Mode shows the interpretation, citations, limitations, and recommendation. Hollywood Mode adds clearly labeled theatrical dialogue beside the same verified findings. Neither route invokes an experiment runner, changes trusted kernels, grants approval, or starts GPU execution.
+
+Operation Stolen Cycles also shows the accepted dialogue inside its mission overlay, followed by a separately labeled verified observation, Muse's interpretation, limitations, an advisory next action for human review, and links to every cited observation key. The dashboard prefers the validated accepted cinematic revision and falls back to the validated original `accepted.json` if the revision is missing, rejected, or invalid. It labels the chosen version and shows the original response ID and audit path for revision traceability. The accepted Experiment 003 response and its original prompt remain intact and continue to validate against the earlier prompt version.
+
+Run the deterministic test suite with `.venv/bin/python -m pytest -q`. Pytest is scoped to `tests/` so the standalone live API script at the repository root is not collected.
 
 ## Response diagnostics
 
