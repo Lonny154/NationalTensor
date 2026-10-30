@@ -78,6 +78,17 @@ def test_three_distinct_structured_ideas(context):
         with pytest.raises(ValueError): lab.parse_response(json.dumps(bad), context)
 
 
+def test_default_four_reference_limit_is_preserved(context):
+    proposal = ideas(context)
+    experiment = context["experiments"]["004"]
+    proposal["ideas"][0]["evidence_references"] = [
+        {"evidence_id": experiment["evidence_id"], "observation_key": key}
+        for key in list(experiment["observations"])[:5]
+    ]
+    with pytest.raises(ValueError, match="evidence reference count must be 1 to 4"):
+        lab.parse_response(json.dumps(proposal), context)
+
+
 def test_audit_rejection_idempotency_and_explicit_round(tmp_path, monkeypatch, context):
     monkeypatch.setattr(lab, "context_package", lambda root=lab.ROOT: context)
     raw = json.dumps(ideas(context))

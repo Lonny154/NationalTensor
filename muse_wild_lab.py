@@ -96,7 +96,9 @@ def prompt_for(context):
             + json.dumps(example, sort_keys=True) + "\nCONTEXT\n" + json.dumps(context, sort_keys=True))
 
 
-def parse_response(raw, context):
+def parse_response(raw, context, *, max_evidence_references=4):
+    if not isinstance(max_evidence_references, int) or not 1 <= max_evidence_references <= 16:
+        raise ValueError("invalid evidence reference limit")
     if not isinstance(raw, str) or not raw.strip() or len(raw) > 30000:
         raise ValueError("missing or oversized response")
     try:
@@ -126,7 +128,11 @@ def parse_response(raw, context):
             if re.search(r"\b(?:run|execute|implement)\s+(?:this|it|now|immediately)\b", value, re.I):
                 raise ValueError("idea requests immediate execution")
         refs = idea["evidence_references"]
-        if not isinstance(refs, list) or not 1 <= len(refs) <= 4 or any(
+        if not isinstance(refs, list):
+            raise ValueError("malformed evidence references")
+        if not 1 <= len(refs) <= max_evidence_references:
+            raise ValueError(f"evidence reference count must be 1 to {max_evidence_references}")
+        if any(
                 not isinstance(ref, dict) or set(ref) != REFERENCE_FIELDS
                 or not isinstance(ref["evidence_id"], str)
                 or not isinstance(ref["observation_key"], str)
