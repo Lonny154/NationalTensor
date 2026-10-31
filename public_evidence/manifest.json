@@ -1,0 +1,30 @@
+{
+  "files": {
+    "README.md": "50628bc2c9d7f050e5845c38b29394c334699ab967914216a3271ed741fea30a",
+    "evidence.json": "8cc2f50681abf02b4085cb6e49e5825d0b6709a9b490e9f513a37849397811fc",
+    "summary.md": "9f7a9326e2d5d71b59737ba10d0a3b18a7fb10b6f7fbbd27f52547bc2745adbc"
+  },
+  "schema": "national_tensor_public_evidence_v1",
+  "source_artifacts": {
+    "evaluations/experiment-005-hilbert-tile-traversal/20261030T013245142673Z/screening/20261030T013442437146Z/manifest.json": "bea08d039951d7202cf61ac9ffce9ec274b3a333ae277c2b90d3a866767a9aea",
+    "evaluations/experiment-005-hilbert-tile-traversal/20261030T013245142673Z/screening/20261030T013442437146Z/result.json": "9d872b10bd4040fe0c9fa46482a2659c4809e4e93df741c3c0912a77252fb85b",
+    "evaluations/experiment-005-hilbert-tile-traversal/20261030T013245142673Z/verify/manifest.json": "87965de9b203f5513538cb47b468f413a6939831d6e0ae2acb35c6fb92963c4a",
+    "evaluations/experiment-005-hilbert-tile-traversal/20261030T013245142673Z/verify/result.json": "2b3aebb6960a733c925b79f33c71a902a5755be08b0753f3eb9218b685b00795",
+    "evaluations/muse-critic-value-study/v1/20261030T205425148094Z/criticism/P01/binding.json": "17aee40b17cc94abf8b0e9ed96252d1a75880f42743ca97dbd543639e0afdb33",
+    "evaluations/muse-critic-value-study/v1/20261030T205425148094Z/decisions/P01/A/audit.json": "e4ab250b756ab7c2116973a8bc17a88c0076e6ac85cae2299417cfc5383d799e",
+    "evaluations/muse-critic-value-study/v1/20261030T205425148094Z/decisions/P01/B/audit.json": "d503382a8f5c2915fbfb7e16a0ee3cc4c3b356ce75dce3f7f711bb5d3fa1ae39",
+    "evaluations/muse-critic-value-study/v1/20261030T205425148094Z/setup/study.json": "742af6daf3eb120d139e05ae96a70edf6bacc2523ea8c494a887f3a7eb6fc9cb",
+    "evaluations/muse-discovery-study/v1/20261030T142150402688Z/reviews/20261030T142419308682Z/reveal/result.json": "85e2d31345555d1715174b022ce6cd49b1d88d1fcb7651e28376899b2c43d20a",
+    "evaluations/muse-discovery-study/v1/20261030T142150402688Z/reviews/20261030T142419308682Z/scores/scores.json": "edc75bd97a4fc697fdcc3aa4a49d4652d7d4eacbd17f15e1e0bb787323ddb65d",
+    "evaluations/muse-research-critic/v1/20261030T145230747865Z/revision/audit.json": "2a146295684b2458cc242cbf8304715bb6faf4055a5d6eafc4d5be5917345c63",
+    "evaluations/muse-research-critic/v1/20261030T152949236420Z/criticism/audit.json": "0d4123d9bc870ec8b09f123a439ede152b1aea7210137111a9ab77a6c01816f8",
+    "evaluations/muse-research-critic/v1/20261030T152949236420Z/revision/audit.json": "609dfa48370920762e85a7fb01cf4cd769190f00c49630e29872f38eb8f63eac",
+    "evaluations/muse-research-critic/v1/20261030T210928808538Z/criticism/audit.json": "9e8c07f5b9c841b9765e787aa5e65fa37ab82138ab03b7c73edab39637a9aaac",
+    "evaluations/muse-research-critic/v1/20261030T211309477752Z/criticism/audit.json": "e0043e8661ba6217df686cddc96d336267e439b8ef72b023c205f87cc0739c6b",
+    "evaluations/muse-research-critic/v1/20261030T211546504949Z/criticism/audit.json": "d2d1cfda537b5e53946ac70b56762618f8e2fc568707d2bca3ecd277bca5ccd0",
+    "evaluations/muse-research-critic/v1/20261030T211855242529Z/criticism/audit.json": "1108ea00b7b38881e1576973e661b5b826775cb0734914d04f70f47e7bb84ef8",
+    "evaluations/muse-research-critic/v1/20261030T212025073515Z/criticism/audit.json": "29c287c77f20e51752cf951445c9daa801365808a08912b999df949b42ff923e",
+    "evaluations/muse-research-reflection/v1/20261030T141047613123Z/audit.json": "972b20f290de9a1dd3949a7d6a51b22529548d4d1f72f21b87be6e757353fe0d",
+    "evaluations/muse-wild-research-lab/v1/accepted.json": "e0446ebb2f8657119d3d0ed5589b5591a683c4bd286878d6d2e46b275d43d3b6"
+  }
+}
