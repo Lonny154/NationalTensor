@@ -1,0 +1,883 @@
+{
+  "experiment_005": {
+    "config": {
+      "block_k": 32,
+      "block_m": 64,
+      "block_n": 128,
+      "num_stages": 3,
+      "num_warps": 4
+    },
+    "confirmation_status": "missing",
+    "correctness": [
+      {
+        "schedule": "row_major",
+        "seed": 42,
+        "shape": "128x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 42,
+        "shape": "128x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 42,
+        "shape": "128x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 43,
+        "shape": "128x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 43,
+        "shape": "128x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 43,
+        "shape": "128x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 42,
+        "shape": "512x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 42,
+        "shape": "512x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 42,
+        "shape": "512x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 43,
+        "shape": "512x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 43,
+        "shape": "512x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 43,
+        "shape": "512x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 42,
+        "shape": "2048x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 42,
+        "shape": "2048x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 42,
+        "shape": "2048x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 43,
+        "shape": "2048x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 43,
+        "shape": "2048x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 43,
+        "shape": "2048x3072x768",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 42,
+        "shape": "2048x4096x1024",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 42,
+        "shape": "2048x4096x1024",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 42,
+        "shape": "2048x4096x1024",
+        "status": "PASS"
+      },
+      {
+        "schedule": "row_major",
+        "seed": 43,
+        "shape": "2048x4096x1024",
+        "status": "PASS"
+      },
+      {
+        "schedule": "grouped_m4",
+        "seed": 43,
+        "shape": "2048x4096x1024",
+        "status": "PASS"
+      },
+      {
+        "schedule": "hilbert",
+        "seed": 43,
+        "shape": "2048x4096x1024",
+        "status": "PASS"
+      }
+    ],
+    "environment": {
+      "cuda": "12.8",
+      "gpu": "NVIDIA GeForce RTX 4060 Ti",
+      "python": "3.13.11",
+      "torch": "2.11.0+cu128",
+      "triton": "3.6.0"
+    },
+    "hypothesis": {
+      "core_mechanism": "Order M-N output tiles along Hilbert space-filling curve borrowed from cartography to maximize 2D DRAM and L2 spatial locality.",
+      "disproof_observation": "If DRAM coalescing and L2 locality metrics show no change, curve benefit is refuted.",
+      "evidence_references": [
+        {
+          "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+          "observation_key": "compiler_equivalent_for_compared_sources_on_both_workloads"
+        }
+      ],
+      "name": "Hilbert Tile Traversal",
+      "necessary_assumptions": "Many M-N tiles; curve computation stays out of inner K-loop; exact tile coverage.",
+      "why_it_might_work": "Speculatively, 2D locality could reduce row-buffer thrash versus linear order, if memory system is sensitive to it."
+    },
+    "inference": "A cache-locality explanation is unconfirmed without independent timing confirmation and validated profiling.",
+    "observation": "Correctness passed in the recorded scope; eight paired CUDA-event comparisons are screening only.",
+    "profiling_status": "not_validated",
+    "run_id": "20261030T013245142673Z",
+    "screening": [
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.8706928165062516,
+          1.064090441323187
+        ],
+        "median_paired_ratio": 0.9942989053504223,
+        "opponent": "grouped_m4",
+        "paired_ratios": [
+          1.019187391067653,
+          1.000081997956241,
+          1.316545486453607,
+          0.8706928165062516,
+          0.9885158127446038,
+          0.9456981400750782,
+          0.857402085816066,
+          1.064090441323187
+        ],
+        "rounds": 8,
+        "shape": "128x3072x768"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.8893462207441152,
+          1.0473196685026485
+        ],
+        "median_paired_ratio": 0.9807409315299132,
+        "opponent": "row_major",
+        "paired_ratios": [
+          0.8849804281210794,
+          1.0473196685026485,
+          1.0677416626408285,
+          0.9983377533484498,
+          1.047190508327704,
+          0.9631441097113765,
+          0.9503339715526382,
+          0.8893462207441152
+        ],
+        "rounds": 8,
+        "shape": "128x3072x768"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.997683620970368,
+          1.02710199758266
+        ],
+        "median_paired_ratio": 1.0019068437051466,
+        "opponent": "grouped_m4",
+        "paired_ratios": [
+          1.0053613083507287,
+          1.02710199758266,
+          1.000007344317518,
+          1.0010971327942433,
+          1.0401428768624648,
+          1.00271655461605,
+          0.9956586683296162,
+          0.997683620970368
+        ],
+        "rounds": 8,
+        "shape": "2048x3072x768"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.9987335096313557,
+          1.0041784785016152
+        ],
+        "median_paired_ratio": 0.9991797675787395,
+        "opponent": "row_major",
+        "paired_ratios": [
+          1.004556997021586,
+          0.9988619329926863,
+          0.9993516028026252,
+          1.0010641567794254,
+          0.9990079323548537,
+          1.0041784785016152,
+          0.9987335096313557,
+          0.9983576874708362
+        ],
+        "rounds": 8,
+        "shape": "2048x3072x768"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.9905549768514059,
+          1.0090606024242117
+        ],
+        "median_paired_ratio": 0.9969249469905669,
+        "opponent": "grouped_m4",
+        "paired_ratios": [
+          1.026742145824476,
+          0.9951290007594662,
+          1.003041256979291,
+          0.993556097677603,
+          0.9987208932216676,
+          0.9865072767212819,
+          1.0090606024242117,
+          0.9905549768514059
+        ],
+        "rounds": 8,
+        "shape": "2048x4096x1024"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.9959436378747091,
+          1.0098206957179274
+        ],
+        "median_paired_ratio": 0.9964324791743037,
+        "opponent": "row_major",
+        "paired_ratios": [
+          1.0098206957179274,
+          0.9954023606723628,
+          1.010050591291262,
+          0.9959473544794938,
+          0.9959436378747091,
+          0.9960226266358463,
+          0.996842331712761,
+          1.009610258326271
+        ],
+        "rounds": 8,
+        "shape": "2048x4096x1024"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.9984549637975322,
+          1.000321339213155
+        ],
+        "median_paired_ratio": 0.9992195058576494,
+        "opponent": "grouped_m4",
+        "paired_ratios": [
+          0.9956905796400207,
+          0.9985722392731694,
+          1.000321339213155,
+          0.9984549637975322,
+          0.9992963969617731,
+          0.9991426147535256,
+          1.0464699596101779,
+          0.999452610066361
+        ],
+        "rounds": 8,
+        "shape": "512x3072x768"
+      },
+      {
+        "bootstrap_median_ratio_95pct": [
+          0.9957234164929829,
+          1.042951190610591
+        ],
+        "median_paired_ratio": 0.9971394589037794,
+        "opponent": "row_major",
+        "paired_ratios": [
+          0.9681138036031375,
+          1.0758698632674992,
+          1.042951190610591,
+          0.9958186341355794,
+          0.9956281988503866,
+          0.9986399448352017,
+          0.9961747721204752,
+          0.9981041456870835
+        ],
+        "rounds": 8,
+        "shape": "512x3072x768"
+      }
+    ],
+    "shapes": [
+      [
+        128,
+        3072,
+        768
+      ],
+      [
+        512,
+        3072,
+        768
+      ],
+      [
+        2048,
+        3072,
+        768
+      ],
+      [
+        2048,
+        4096,
+        1024
+      ]
+    ]
+  },
+  "experiment_006": {
+    "audit_id": "20261030T141047613123Z",
+    "citations": [
+      {
+        "evidence_id": "experiment_005:20261030T013245142673Z",
+        "observation_key": "original_hypothesis"
+      },
+      {
+        "evidence_id": "experiment_005:20261030T013245142673Z",
+        "observation_key": "screening_scope"
+      },
+      {
+        "evidence_id": "experiment_005:20261030T013245142673Z",
+        "observation_key": "verification"
+      },
+      {
+        "evidence_id": "experiment_005:20261030T013245142673Z",
+        "observation_key": "profiling_status"
+      }
+    ],
+    "decision": "abandon",
+    "evidence_based_justification": "Observed: timing scope notes persistent lookup reused across timed launches with lookup fetch and arithmetic inside the kernel, and verification notes program assignment does not guarantee physical execution order and compiler differences alone do not establish benefit. Inference: the proposed locality mechanism remains speculative inference only, with no profiling evidence to support cache locality cause.",
+    "model": "muse-spark-1.3",
+    "prompt_version": "experiment_006_reflection_v1",
+    "source_evidence_id": "experiment_005:20261030T013245142673Z"
+  },
+  "experiment_007": {
+    "assignments": [
+      {
+        "condition": "B",
+        "evaluation_id": "P01",
+        "proposal_index": 0,
+        "proposal_sha256": "7ad5720321d806f5e6d250b428704c6657483a5acb296b5c85d5868c899b77cb"
+      },
+      {
+        "condition": "A",
+        "evaluation_id": "P02",
+        "proposal_index": 0,
+        "proposal_sha256": "50f134082883f17cb565d7e3e1e507f04ce4955bee0f8370086e141da44eb8bf"
+      },
+      {
+        "condition": "A",
+        "evaluation_id": "P03",
+        "proposal_index": 1,
+        "proposal_sha256": "15cd9a573ba66d0cefa697c9741716dcb8de77500383727a0eb56a729ac128dc"
+      },
+      {
+        "condition": "A",
+        "evaluation_id": "P04",
+        "proposal_index": 2,
+        "proposal_sha256": "45d089a85259ae4f2c36fad96a8864432d0f51ee44ba089a29c0b75e93436961"
+      },
+      {
+        "condition": "B",
+        "evaluation_id": "P05",
+        "proposal_index": 2,
+        "proposal_sha256": "07a4124a2c4f46199376731dcd2e07b4450da082733fa208d6efddd073ca9392"
+      },
+      {
+        "condition": "B",
+        "evaluation_id": "P06",
+        "proposal_index": 1,
+        "proposal_sha256": "e07624e3c6e51120475e651ce085185d18b86bf378269d913bc08221eb93cc07"
+      }
+    ],
+    "limitations": "Six proposals and manual 1–5 scores are subjective; wording may reveal provenance. No statistical superiority is established.",
+    "means": {
+      "A": {
+        "evidence_alignment": 2.6666666666666665,
+        "falsifiability": 3.3333333333333335,
+        "implementation_cost": 3.3333333333333335,
+        "mechanism_specificity": 3.6666666666666665,
+        "novelty": 2.0
+      },
+      "B": {
+        "evidence_alignment": 2.6666666666666665,
+        "falsifiability": 3.6666666666666665,
+        "implementation_cost": 3.6666666666666665,
+        "mechanism_specificity": 3.3333333333333335,
+        "novelty": 2.3333333333333335
+      }
+    },
+    "proposals": [
+      {
+        "evaluation_id": "P01",
+        "proposal": {
+          "biggest_obstacle": "The compiler may already normalize invariant predicates so source-level hoisting leaves generated code unchanged.",
+          "category": "plausible_overlooked",
+          "core_mechanism": "Compute M-boundary mask predicates once per output tile outside the K-loop and reuse the value inside the loop.",
+          "disproof_observation": "Median latency of the hoisted variant is unchanged versus the fixed control on the same workload and configuration.",
+          "evidence_references": [
+            {
+              "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+              "observation_key": "control_workload"
+            },
+            {
+              "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+              "observation_key": "workload"
+            }
+          ],
+          "name": "Invariant Mask Hoist for Edge Tiles",
+          "necessary_assumptions": "M-dimension boundary checks are invariant across K iterations for a given output tile and hoisting preserves program semantics.",
+          "numerical_equivalence": "exact",
+          "smallest_proof_of_concept": "Advisory review only: inspect compiler output for hoisted versus non-hoisted mask formulation; requires human review, no execution requested.",
+          "testable_prediction": "If the mechanism matters, median latency of the hoisted variant differs from the fixed control on 128x3072x768 workload under identical block and pipeline configuration.",
+          "what_makes_it_unconventional": "It optimizes predicate placement rather than tile sizes, stages, or memory layout.",
+          "why_it_might_work": "Hypothetically, removing repeated predicate evaluation from the inner loop could reduce instruction overhead in boundary tiles."
+        }
+      },
+      {
+        "evaluation_id": "P02",
+        "proposal": {
+          "biggest_obstacle": "The compiler may already eliminate redundant bounds logic, leaving no separable addressing cost to remove.",
+          "category": "plausible_overlooked",
+          "core_mechanism": "The hypothesis is that separating full tiles from edge tiles could reduce per-iteration predicate and address arithmetic inside the main Triton GEMM loop for the 128 by 3072 by 768 shape.",
+          "disproof_observation": "Median kernel latency for the edge-specialized variant is unchanged versus the fixed-shape control on identical inputs.",
+          "evidence_references": [
+            {
+              "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+              "observation_key": "workload"
+            },
+            {
+              "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+              "observation_key": "control_workload"
+            }
+          ],
+          "name": "Full-tile fast path with specialized edge handling",
+          "necessary_assumptions": "The workload dimensions remain fixed during comparison, full tiles dominate execution time, and address calculation contributes non-negligible overhead relative to matrix arithmetic.",
+          "numerical_equivalence": "exact",
+          "smallest_proof_of_concept": "A minimal comparison would contrast a uniform-masked kernel against a variant with an unmasked main path plus a separate edge path using the same tile configuration and correctness check.",
+          "testable_prediction": "If addressing overhead matters, the edge-specialized variant shows different median latency than the fixed uniform-masked control on the 128 by 3072 by 768 workload at matched configuration.",
+          "what_makes_it_unconventional": "It treats control overhead rather than tensor-core math or memory tiling as the advisory bottleneck for a small-batch GEMM.",
+          "why_it_might_work": "Removing per-load predicates from the dominant path might reduce instruction overhead and improve pipelining while preserving identical output values."
+        }
+      },
+      {
+        "evaluation_id": "P03",
+        "proposal": {
+          "biggest_obstacle": "Altered traversal may disrupt L2 locality or hardware scheduling and offset any locality benefit.",
+          "category": "cross_disciplinary",
+          "core_mechanism": "The hypothesis is that reordering output-tile launch order using a cache-aware grouped traversal borrowed from CPU locality and network scheduling could improve L2 reuse of weights across neighboring tiles.",
+          "disproof_observation": "Median kernel latency with grouped tile ordering is unchanged versus raster ordering on the fixed control workload.",
+          "evidence_references": [
+            {
+              "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+              "observation_key": "configuration"
+            },
+            {
+              "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+              "observation_key": "control_workload"
+            }
+          ],
+          "name": "Locality-aware output tile visitation order",
+          "necessary_assumptions": "Weight reuse across adjacent output tiles is limited by launch order, L2 capacity can retain shared tiles under reordering, and ordering does not alter numerical results.",
+          "numerical_equivalence": "exact",
+          "smallest_proof_of_concept": "A minimal comparison would hold tile sizes and pipeline depth constant while contrasting raster program-id mapping against a grouped or swizzled mapping on the same shape.",
+          "testable_prediction": "If traversal locality matters, grouped ordering shows different median latency and different L2 hit behavior than raster ordering on the fixed 128 by 3072 by 768 control.",
+          "what_makes_it_unconventional": "It applies CPU cache-oblivious and packet-scheduling ordering concepts to GPU thread-block scheduling rather than changing tile sizes or arithmetic.",
+          "why_it_might_work": "Co-scheduling tiles that share the same weight block might increase L2 hits and reduce DRAM traffic for a weight-heavy tall-skinny output."
+        }
+      },
+      {
+        "evaluation_id": "P04",
+        "proposal": {
+          "biggest_obstacle": "Partitioning work unevenly can introduce synchronization, reduction, and occupancy costs that outweigh any tail-effect improvement.",
+          "category": "high_risk_transformative",
+          "core_mechanism": "The hypothesis is that restructuring the GEMM into a Stream-K style decomposition along the K and M dimensions could balance work across streaming multiprocessors and reduce quantization idle time.",
+          "disproof_observation": "Median end-to-end latency for the Stream-K structured variant is unchanged versus the fixed data-parallel control with identical outputs.",
+          "evidence_references": [
+            {
+              "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+              "observation_key": "workload"
+            },
+            {
+              "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+              "observation_key": "partial_m_workload"
+            }
+          ],
+          "name": "Stream-K work redistribution across multiprocessors",
+          "necessary_assumptions": "The fixed tile decomposition leaves uneven multiprocessor work, split-K partial sums can be combined without changing final values, and extra reduction overhead remains smaller than idle-time savings.",
+          "numerical_equivalence": "exact",
+          "smallest_proof_of_concept": "A minimal comparison would contrast the standard block-partitioned kernel against a K-split variant with deterministic final reduction on the same dimensions and validation tolerance.",
+          "testable_prediction": "If load imbalance matters, the K-split variant shows different median latency than the fixed block-partitioned control on the same workload and GPU.",
+          "what_makes_it_unconventional": "It abandons one-output-tile-per-program ownership in favor of cooperative partial-sum production and reduction.",
+          "why_it_might_work": "Distributing reduction work more evenly might keep more multiprocessors productive on shapes where the output grid does not divide hardware resources evenly."
+        }
+      },
+      {
+        "evaluation_id": "P05",
+        "proposal": {
+          "biggest_obstacle": "Persistent stationing requires careful occupancy, synchronization, and occupancy balance that can offset any reuse benefit.",
+          "category": "high_risk_transformative",
+          "core_mechanism": "Restructure the kernel as a persistent grid where each processor station holds a weight slab in shared memory across many output rows.",
+          "disproof_observation": "Median latency of the persistent variant is unchanged or higher versus the fixed non-persistent control on the same workloads.",
+          "evidence_references": [
+            {
+              "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+              "observation_key": "control_workload"
+            },
+            {
+              "evidence_id": "experiment_005:20261030T013245142673Z",
+              "observation_key": "verification"
+            }
+          ],
+          "name": "Persistent Weight-Station Grid",
+          "necessary_assumptions": "Weight reuse across M exceeds shared-memory residency cost and persistent scheduling preserves exact outputs without data races.",
+          "numerical_equivalence": "exact",
+          "smallest_proof_of_concept": "Advisory review only: inspect persistent grid design for residency, synchronization, and coverage model; requires human review, no execution requested.",
+          "testable_prediction": "If stationing matters, median latency of the persistent variant differs from the fixed non-persistent control on 128x3072x768 and 2048x4096x1024 workloads under identical precision.",
+          "what_makes_it_unconventional": "It replaces one-shot threadblock-per-tile execution with long-lived workers and stationary weights.",
+          "why_it_might_work": "Hypothetically, holding weights resident could reduce repeated global loads when many output tiles share the same K-N data."
+        }
+      },
+      {
+        "evaluation_id": "P06",
+        "proposal": {
+          "biggest_obstacle": "Hardware threadblock launch order may not follow program identifier order, limiting control over locality.",
+          "category": "cross_disciplinary",
+          "core_mechanism": "Dispatch output tiles in spatially grouped platoons borrowed from traffic-flow batching to keep neighboring consumer tiles resident together.",
+          "disproof_observation": "Median latency and L2 locality indicators are unchanged versus row-major control on the same workloads.",
+          "evidence_references": [
+            {
+              "evidence_id": "experiment_005:20261030T013245142673Z",
+              "observation_key": "screening_scope"
+            },
+            {
+              "evidence_id": "experiment_005:20261030T013245142673Z",
+              "observation_key": "verification"
+            }
+          ],
+          "name": "Platooned Tile Dispatch for Locality",
+          "necessary_assumptions": "Multiple M-N tiles share input and output working sets, grouping logic stays out of the inner K-loop, and tile coverage remains exact.",
+          "numerical_equivalence": "exact",
+          "smallest_proof_of_concept": "Advisory review only: inspect program-identifier to tile mapping for grouping structure and coverage; requires human review, no execution requested.",
+          "testable_prediction": "If grouping matters, median latency of grouped dispatch differs from row-major control on 512x3072x768 and 2048x3072x768 workloads under identical configuration.",
+          "what_makes_it_unconventional": "It imports traffic platooning for batched movement into threadblock scheduling instead of tuning math or memory instructions.",
+          "why_it_might_work": "Hypothetically, co-scheduling adjacent tiles could improve L2 reuse and reduce DRAM row turnover if the memory system is sensitive to dispatch order."
+        }
+      }
+    ],
+    "review_id": "20261030T142419308682Z",
+    "scores": {
+      "P01": {
+        "evidence_alignment": {
+          "justification": "Earlier shared context reports compiler equivalence for a reviewed mask-hoisting variant; the proposal gives no reason this variant differs.",
+          "score": 2
+        },
+        "falsifiability": {
+          "justification": "A fixed-control latency comparison is possible, but a null latency outcome alone does not isolate redundant predicate work.",
+          "score": 3
+        },
+        "implementation_cost": {
+          "justification": "A source-level mask rewrite and compiler inspection should be inexpensive to implement and assess.",
+          "score": 5
+        },
+        "mechanism_specificity": {
+          "justification": "The invariant boundary-mask mechanism and possible compiler normalization are described clearly, but no code-level distinction is pinned down.",
+          "score": 3
+        },
+        "novelty": {
+          "justification": "Mask hoisting is an established optimization and overlaps an earlier compiler-equivalence diagnostic.",
+          "score": 1
+        }
+      },
+      "P02": {
+        "evidence_alignment": {
+          "justification": "The proposed 128x3072x768 output grid is divisible by 64x128 tiles, leaving no partial M or N output tiles under the shared configuration.",
+          "score": 2
+        },
+        "falsifiability": {
+          "justification": "A fixed-shape timing comparison is executable, but a compiler comparison and a shape with actual edge tiles would be more discriminating.",
+          "score": 3
+        },
+        "implementation_cost": {
+          "justification": "A full-tile versus edge-specialized kernel comparison is manageable, though it needs a more appropriate shape and correctness tests.",
+          "score": 4
+        },
+        "mechanism_specificity": {
+          "justification": "The main-path predicate-removal mechanism is concrete, but its applicability to the proposed shape is questionable.",
+          "score": 3
+        },
+        "novelty": {
+          "justification": "Separating full and edge tiles is a familiar kernel-specialization strategy, with limited novelty here.",
+          "score": 2
+        }
+      },
+      "P03": {
+        "evidence_alignment": {
+          "justification": "The shared context does not establish a scheduling bottleneck; the proposal is plausible but not grounded in measured L2 pressure.",
+          "score": 3
+        },
+        "falsifiability": {
+          "justification": "The proposal includes both matched latency and L2 hit behavior, allowing a useful check of the locality explanation.",
+          "score": 4
+        },
+        "implementation_cost": {
+          "justification": "A grouped-versus-raster tile mapping with fixed kernel dimensions is relatively tractable, including correctness and profiling.",
+          "score": 4
+        },
+        "mechanism_specificity": {
+          "justification": "Weight-tile reuse, L2 residence, and launch ordering form a reasonably specific mechanism with explicit assumptions.",
+          "score": 4
+        },
+        "novelty": {
+          "justification": "Grouped cache-aware traversal is a well-known GPU scheduling technique, despite the cross-disciplinary analogy.",
+          "score": 2
+        }
+      },
+      "P04": {
+        "evidence_alignment": {
+          "justification": "No provided utilization evidence establishes that SM work imbalance is material for the nominated workload.",
+          "score": 3
+        },
+        "falsifiability": {
+          "justification": "Matched latency is testable, but the claimed exact numerical equivalence is questionable when reduction order changes.",
+          "score": 3
+        },
+        "implementation_cost": {
+          "justification": "Cooperative K splitting and deterministic final reduction require significant implementation and numerical-validation work.",
+          "score": 2
+        },
+        "mechanism_specificity": {
+          "justification": "SM utilization, work quantization, and partial-sum reduction costs are identified as concrete competing mechanisms.",
+          "score": 4
+        },
+        "novelty": {
+          "justification": "Stream-K and split-K work redistribution are established GEMM approaches, although they can be substantial engineering changes.",
+          "score": 2
+        }
+      },
+      "P05": {
+        "evidence_alignment": {
+          "justification": "The idea is technically plausible but does not cite measured weight-reload traffic or a demonstrated reuse limit.",
+          "score": 3
+        },
+        "falsifiability": {
+          "justification": "A matched persistent-versus-nonpersistent latency test can falsify a performance benefit, especially with additional traffic counters.",
+          "score": 4
+        },
+        "implementation_cost": {
+          "justification": "Persistent scheduling, shared-memory constraints, and synchronization demand substantial engineering and profiling.",
+          "score": 2
+        },
+        "mechanism_specificity": {
+          "justification": "The proposed shared-memory weight retention and cross-row reuse mechanism is clear, although a residency model is missing.",
+          "score": 4
+        },
+        "novelty": {
+          "justification": "Persistent workers with stationary weight slabs are a distinct but not unprecedented optimization direction.",
+          "score": 3
+        }
+      },
+      "P06": {
+        "evidence_alignment": {
+          "justification": "It acknowledges uncertainty about physical CTA order, but offers no measured evidence that dispatch order limits reuse.",
+          "score": 3
+        },
+        "falsifiability": {
+          "justification": "The stated matched latency and L2 locality comparisons provide observable criteria for testing the proposal.",
+          "score": 4
+        },
+        "implementation_cost": {
+          "justification": "A tile-map transformation with coverage checks and matched profiling is relatively easy to prototype.",
+          "score": 4
+        },
+        "mechanism_specificity": {
+          "justification": "Spatial grouping and possible L2 reuse are described, yet the exact grouping policy and hardware execution relationship are underspecified.",
+          "score": 3
+        },
+        "novelty": {
+          "justification": "Traffic-platooning is a creative framing, but the substantive mechanism overlaps conventional grouped tile dispatch.",
+          "score": 3
+        }
+      }
+    },
+    "study_id": "20261030T142150402688Z"
+  },
+  "experiment_008": {
+    "accepted_criticism": {
+      "case_id": "20261030T152949236420Z",
+      "evidence_citations": [
+        {
+          "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+          "observation_key": "compiler_equivalent_for_compared_sources"
+        },
+        {
+          "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+          "observation_key": "runtime_measured"
+        },
+        {
+          "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+          "observation_key": "correctness"
+        },
+        {
+          "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+          "observation_key": "compiler_equivalent_for_compared_sources_on_both_workloads"
+        },
+        {
+          "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+          "observation_key": "control_workload"
+        },
+        {
+          "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+          "observation_key": "cross_workload_caution"
+        },
+        {
+          "evidence_id": "experiment_005:20261030T013245142673Z",
+          "observation_key": "confirmation_status"
+        }
+      ],
+      "inferred_explanations": "Inference only: that hoisting would reduce inner-loop instruction overhead in boundary tiles; that compiler normalization explains prior equivalence; that absence of latency change would refute practical benefit. No profiling validates cache, instruction, or latency cause.",
+      "model": "muse-spark-1.3",
+      "observed_evidence": "Validated observations only: diagnostic 003 workload [128,3072,768] correctness PASS, compiler_equivalent_for_compared_sources true, runtime_measured false; diagnostic 004 control_workload [128,3072,768] and partial_m_workload [130,3072,768] with compiler_equivalent_for_compared_sources_on_both_workloads true, runtime_measured false, and caution that M=128 vs M=130 differences are workload differences; experiment 005 confirmation_status missing and screening_unconfirmed. No validated latency speedup for mask hoisting.",
+      "reasoning": "Advisory only, no GPU execution authorized: falsifiable and exact, but prior diagnostics already show compiler equivalence with no runtime signal, and chosen control has no edge tiles. Expected information gain is a predicted null. Deprioritize versus mechanisms with codegen difference or broader tile coverage.",
+      "recommendation": "deprioritize",
+      "status": "accepted"
+    },
+    "original_proposal": {
+      "biggest_obstacle": "The compiler may already normalize invariant predicates so source-level hoisting leaves generated code unchanged.",
+      "category": "plausible_overlooked",
+      "core_mechanism": "Compute M-boundary mask predicates once per output tile outside the K-loop and reuse the value inside the loop.",
+      "disproof_observation": "Median latency of the hoisted variant is unchanged versus the fixed control on the same workload and configuration.",
+      "evidence_references": [
+        {
+          "evidence_id": "diagnostic:partial_boundary_tiles:20261030T005455534566Z",
+          "observation_key": "control_workload"
+        },
+        {
+          "evidence_id": "diagnostic:mask_hoisting_m128:20261028T145501296300Z",
+          "observation_key": "workload"
+        }
+      ],
+      "name": "Invariant Mask Hoist for Edge Tiles",
+      "necessary_assumptions": "M-dimension boundary checks are invariant across K iterations for a given output tile and hoisting preserves program semantics.",
+      "numerical_equivalence": "exact",
+      "smallest_proof_of_concept": "Advisory review only: inspect compiler output for hoisted versus non-hoisted mask formulation; requires human review, no execution requested.",
+      "testable_prediction": "If the mechanism matters, median latency of the hoisted variant differs from the fixed control on 128x3072x768 workload under identical block and pipeline configuration.",
+      "what_makes_it_unconventional": "It optimizes predicate placement rather than tile sizes, stages, or memory layout.",
+      "why_it_might_work": "Hypothetically, removing repeated predicate evaluation from the inner loop could reduce instruction overhead in boundary tiles."
+    },
+    "proposal_id": "P01",
+    "revision_attempts": [
+      {
+        "case_id": "20261030T145230747865Z",
+        "rejection_category": "Unsupported numerical measurement under the recorded citation and numeric validator.",
+        "status": "rejected"
+      },
+      {
+        "case_id": "20261030T152949236420Z",
+        "rejection_category": "The response contained an evidence reference outside the validated source scope.",
+        "status": "rejected"
+      }
+    ],
+    "validator_lessons": "Rejected responses remain rejected. Numeric claims and historical references must meet the validator citation rules; scientific judgments require human review."
+  },
+  "experiment_009": {
+    "compute_savings_status": "not_measured",
+    "criticism_attempts": [
+      {
+        "case_id": "20261030T152949236420Z",
+        "explanation": "Validated independent criticism bound to the pilot.",
+        "proposal_id": "P01",
+        "rejection_kind": null,
+        "status": "accepted"
+      },
+      {
+        "case_id": "20261030T210928808538Z",
+        "explanation": "Unsupported numerical measurement under the recorded citation and numeric validator.",
+        "proposal_id": "P02",
+        "rejection_kind": "invalid_response",
+        "status": "rejected"
+      },
+      {
+        "case_id": "20261030T211309477752Z",
+        "explanation": "Unsupported numerical measurement under the recorded citation and numeric validator.",
+        "proposal_id": "P03",
+        "rejection_kind": "invalid_response",
+        "status": "rejected"
+      },
+      {
+        "case_id": "20261030T211546504949Z",
+        "explanation": "Unsupported numerical measurement under the recorded citation and numeric validator.",
+        "proposal_id": "P04",
+        "rejection_kind": "invalid_response",
+        "status": "rejected"
+      },
+      {
+        "case_id": "20261030T211855242529Z",
+        "explanation": "Historical experiment identifier lacked a citation in the required scope.",
+        "proposal_id": "P05",
+        "rejection_kind": "invalid_response",
+        "status": "rejected"
+      },
+      {
+        "case_id": "20261030T212025073515Z",
+        "explanation": "Unsupported numerical measurement under the recorded citation and numeric validator.",
+        "proposal_id": "P06",
+        "rejection_kind": "invalid_response",
+        "status": "rejected"
+      }
+    ],
+    "p01_decisions": {
+      "A": {
+        "decision": "deprioritize",
+        "proposal_sha256": "7ad5720321d806f5e6d250b428704c6657483a5acb296b5c85d5868c899b77cb",
+        "status": "accepted"
+      },
+      "B": {
+        "decision": "deprioritize",
+        "proposal_sha256": "7ad5720321d806f5e6d250b428704c6657483a5acb296b5c85d5868c899b77cb",
+        "status": "accepted"
+      }
+    },
+    "paired_evaluation_status": "incomplete",
+    "run_id": "20261030T205425148094Z"
+  },
+  "schema": "national_tensor_public_evidence_v1"
+}
