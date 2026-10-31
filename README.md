@@ -1,5 +1,7 @@
 # National Tensor
 
+**Contributors and AI coding assistants:** read the [project handoff](docs/PROJECT_CONTEXT.md) before resuming work.
+
 **Can an AI research system generate hypotheses, test them against real GPU hardware, learn from negative results, and improve future research decisions?**
 
 National Tensor is a Meta Global AI Developer Hackathon 2026 research project built around that question. It connects Meta Muse proposals to controlled Triton GPU experiments, preserves the evidence behind each result, and feeds validated observations into later advisory research steps. The current system supports hypothesis generation, human-reviewed experiments, reflection, criticism, and blinded study workflows. It does **not** run an end-to-end autonomous optimization loop: people still review proposed kernels and authorize GPU work.
