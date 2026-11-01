@@ -32,6 +32,31 @@ reports; the Heist uses a target/evidence board and authorization/dispatch desks
 The theatrical copy is presentation, and scientific classifications remain
 explicit. Both modes use the same protected forms and validated evidence.
 
+### Pipeline Paradox recording guide
+
+Run `.venv/bin/python dashboard_app.py`, open `http://127.0.0.1:8501/research`,
+switch to **Hollywood Mode**, and select **Replay Pipeline Paradox**. The replay
+uses the verified `public_pipeline_evidence/` bundle and makes no GPU or Muse
+request. If verification fails, its button is disabled. The older Experiment
+003 replay and separate live authorization controls remain available.
+
+For a 2–3 minute recording, click through these four scenes:
+
+1. **Anomaly:** show the independent 0.956221 ratio and 13/14 favorable pairs.
+2. **Investigation:** show 27.51% versus 15.86% active-warps occupancy, broad
+   stall counters, saved compiler differences, and competing explanations.
+   Say that these observations do not prove causality.
+3. **Prediction:** show Wonder 1.0's frozen `lower` K=1536 forecast and the
+   historical 0.953121 reference. It gave no point estimate or range and was
+   not told the numerical scoring deadband.
+4. **Reveal:** show 0.946341 target, 0.951886 fresh control, and the
+   **inconclusive** preregistered outcome. The direction matched, but the
+   target stayed inside the frozen near band and moved less than A/A variation.
+
+Use **Skip effects** or the operating system's reduced-motion preference if
+needed. The vault animation is decorative. Evidence links open the local
+portable bundle or report; keep the final score visible for the closing shot.
+
 ### Operation Stolen Cycles
 
 Start the dashboard with `.venv/bin/python dashboard_app.py`, open
