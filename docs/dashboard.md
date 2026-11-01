@@ -43,9 +43,13 @@ request. If verification fails, its button is disabled. The older Experiment
 For a comfortable 25–35-second recording, start with the Pipeline Paradox
 button in frame, then click through **Anomaly → Investigation → Prediction →
 Reveal**. Allow roughly 5–7 seconds for each short exchange and a little longer
-for the vault to open on the final scene. End by clicking **Switch to Research
-Mode**, where the technical record can be inspected. The single scene button
-advances only on a click; there is no countdown or autoplay.
+for the vault to open on the final scene. End by clicking **Reveal the Real
+Research →**. The replay closes, Research Mode is saved as the normal mode
+preference, and the browser opens the Overview at the top. Its introduction
+explains the project, the three-stage method, the pipeline finding and its
+inconclusive forecast score, with links to the report and portable bundle.
+The single scene button advances only on a click; there is no countdown or
+autoplay.
 
 The dialogue is a parody. The reveal says the observed direction matched but
 the preregistered prediction outcome was **inconclusive**. The overlay's small
