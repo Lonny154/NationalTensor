@@ -1,71 +1,50 @@
 # National Tensor — Project Context
 
-**Last Updated:** October 30, 2026  
-**Purpose:** Read this at the start of a new ChatGPT or Codex session, then follow the linked protocols and current files. This is a handoff, not a substitute for validating artifacts before making new claims.
+**Research handoff for the November 4, 2026 hackathon submission.** Read this with the [root README](../README.md); verify saved artifacts before making a new scientific claim. This handoff summarizes current state and leaves the earlier protocols as historical records.
 
-## Vision and principles
+## Purpose and evidence rules
 
-National Tensor asks: **Can an AI research system generate hypotheses, test them against real GPU hardware, learn from negative results, and improve future research decisions?** It is a Meta Global AI Developer Hackathon 2026 project using Meta Muse, Triton, and reproducible GPU experiments. Keep it ambitious, scientifically honest, and enjoyable.
+National Tensor asks whether Meta Muse can help formulate, critique, and test GPU research hypotheses against real hardware. The implemented workflow joins advisory Muse output, human-reviewed Triton kernels, correctness gates, paired timing, compiler/profiler artifacts, SHA-256 manifests, and a local dashboard. Humans authorize every model request and GPU experiment. Model interpretation, measured observations, structural validation, and human scientific review remain separate.
 
-- Treat model proposals, model interpretations, measured observations, and human decisions as different kinds of evidence.
-- Prefer a useful negative result to an unsupported speedup claim. Screening is not independent confirmation; a compiler match is not a runtime measurement.
-- Preserve source identity, raw local audits, rejected attempts, and immutable hashes. Use the existing validators; do not silently retry or rewrite historical records.
-- Human review gates kernel implementation and GPU execution. No model recommendation automatically authorizes either.
-- Prior Matmul Inspector work supplies compiler and profiler context; distinguish it from new hackathon research. See the [root README](../README.md).
+The current judge-facing result is the [pipeline-stage consolidated report](pipeline_stage_consolidated_report.md). A [portable public bundle](../public_pipeline_evidence/README.md) exposes its raw paired and A/A timing samples, selected Nsight counters, sanitized compiler text, frozen forecast fields, and held-out observations. Run `python public_pipeline_evidence/verify.py public_pipeline_evidence` from a source-only clone. It checks export integrity and arithmetic without the ignored local `evaluations/` tree; it does not reproduce GPU runs or authenticate original files that are not supplied.
 
-## Architecture and current capabilities
+## New pipeline-stage research sequence
 
-The implemented path is **Muse advisory proposal → structured/citation validation → human review → selected Triton or trusted GPU diagnostic → hashed artifacts → evidence loaders → dashboard, reflection, and criticism**. The local Flask dashboard has Research Mode and Hollywood Mode. The controlled [research workflow](research_workflow.md) registers one fixed trusted diagnostic runner; it does not execute generated kernels. The [dashboard guide](dashboard.md) describes its approval, replay, and presentation behavior.
+| Step | Recorded state | Boundary |
+| --- | --- | --- |
+| Discovery and independent confirmation | Run `20261101T012329698902Z` has two screening processes and a separate confirmation. At FP16 `512×3072×768` on the RTX 4060 Ti, stage 3 beat stage 2 in 13/14 confirmation pairs; median stage-3/stage-2 ratio `0.956221`, descriptive bootstrap interval `0.941377–0.966387`. | Correctness passed; CUDA events bracket eager Python launch blocks. The result confirms the measured latency direction under this harness, not its cause. [Protocol](pipeline_stage_discovery_protocol.md). |
+| Mechanism investigation | Nsight sweep `20261101T014354664000Z` captured stage order 3–2–2–3. Stage 2 had higher active-warps occupancy (`27.51%` versus `15.86%`) but higher broad long-scoreboard and barrier stall counters. Saved TTIR matched; TTGIR/PTX showed different async-copy buffering and wait policies. | Four selected replayed launches do not prove copy/compute overlap. DRAM rate varied substantially between stage-3 captures. [Offline analysis](pipeline_stage_mechanism_analysis.md); [profile report](pipeline_stage_profile_analysis.md). |
+| Prospective Muse forecast | Wonder 1.0 run `20261101T015247349750Z` independently selected the anomaly from a neutral observation package and predicted a **lower** stage-3/stage-2 ratio when K doubled to 1536. The response was structurally valid and immutable before target timing. | No defensible point estimate or range; scientific mechanism review is separate. The prompt did not disclose the numerical scoring deadband. [Protocol](prospective_pipeline_hypothesis_protocol.md). |
+| Held-out target and control | Run `20261101T020025480962Z`: first K=1536 target ratio `0.946341` (interval `0.937097–0.951438`), then fresh K=768 control `0.951886` (interval `0.919107–0.986495`); all scoped correctness and stage-agreement checks passed. | Target–control difference `−0.005545` is smaller than A/A variation. Frozen reference `0.953120870845799` and ±`0.04` deadband yield **inconclusive** forecast scoring. Target-before-control order and state differences remain confounders. [Method](prospective_k_depth_test_protocol.md). |
 
-Implemented study tools include Experiment 007's matched proposal requests and blind manual review, Experiment 008's independent critic and revision audit, and Experiment 009's paired decision-request and blind-scoring protocol. These are workflows, not proof of improved research quality. See [Experiments 007](experiment_007.md), [008](experiment_008.md), and [009](experiment_009.md).
+The compiler and profile observations make latency hiding plausible, but another lowered-code scheduling effect, cache behavior, and timing state remain alternatives. No production or cross-GPU generalization is established. The next priority is the hackathon demo and final submission, using these exact labels and limitations, rather than additional experiments or evidence-schema development.
 
-## Findings and limits: Experiments 003–009
+## Other research and historical boundaries
 
-| Experiment | Validated state and boundary |
-| --- | --- |
-| **003** | Reviewed mask-hoisting variant passed scoped correctness; the compared compiled executable and relevant metadata matched at M=128, so timing was skipped. Original Muse-generated source was not executed. [Debrief](muse_research_debrief.md). |
-| **004** | At M=130 with partial boundary tiles, the same reviewed source pair again compiled equivalently within the tested workload. Correctness passed; runtime was not measured. [Protocol](experiment_004.md). |
-| **005** | Hilbert tile traversal passed 24 scoped correctness checks over four shapes and three schedules. Eight paired screening comparisons showed no bootstrap lower bound above 1 against either alternative. Independent timing confirmation is missing, and cache-locality causation is not validated by profiling. [Protocol](experiment_005.md); [portable summary](../public_evidence/summary.md). |
-| **006** | Accepted Muse reflection chose **abandon** as an advisory judgment about the Hilbert direction. It relied on screening and acknowledged missing confirmation and profiling; it is not a new hardware result. [Protocol](experiment_006.md). |
-| **007** | Six original proposals from matched conditions were manually scored after a blind review and condition reveal. The scores are subjective and do not establish statistical superiority. [Protocol](experiment_007.md). |
-| **008** | P01 has one accepted evidence-grounded criticism recommending **deprioritize**. Historical revision attempts remained rejected. Other criticism requests exposed citation and numerical-validation failures; rejected text must not be treated as accepted scientific assessment. [Protocol](experiment_008.md). |
-| **009** | Six proposal-level criticism outcomes: **1 accepted, 5 rejected**. P01 has accepted A/B decisions, but the six-proposal paired decision-quality evaluation, blind scoring, and reveal are incomplete. There is no measured GPU compute saving. [Protocol](experiment_009.md). |
+- **Experiments 003–004:** a human-reviewed mask-hoisting source pair passed scoped correctness and compiled equivalently for the tested shapes, so timing was skipped. The original Muse-generated kernel was not executed. See the [debrief](muse_research_debrief.md) and [partial-boundary protocol](experiment_004.md).
+- **Experiments 005–006:** Hilbert traversal passed 24 scoped correctness checks, but eight paired screening comparisons had no independently confirmed latency advantage. The validated Experiment 005 pipeline lacked confirmation and validated profiling. Muse's accepted *abandon* reflection was advisory. See [005](experiment_005.md), [006](experiment_006.md), and the [earlier portable evidence](../public_evidence/README.md).
+- **Experiments 007–009:** six original proposals received blind subjective review in Experiment 007. Experiment 008's criticism workflow preserved accepted and rejected attempts. Experiment 009 run `20261030T205425148094Z` has accepted bound v1 criticisms for P01/P02 and accepted P01 A/B decisions only; its six-proposal paired study and blind scoring are incomplete. The frozen study cannot use later v2/v3 criticisms as treatment. See [007](experiment_007.md), [008](experiment_008.md), [009](experiment_009.md), the [completion plan](experiment_009_completion_plan.md), and the [rejection audit](rejected_criticism_analysis.md). The older 005–009 public bundle is a historical snapshot and does not reflect every later local attempt.
+- **Experiment 011:** one v3.1 criticism passed structural validation. The project owner separately signed a **qualified human scientific acceptance**: the prior screening ratios and advisory `revise` were defensible, while C10 lacked complete claim-level support and P06's mechanism remained untested. The historical audit's `scientific_status` was not rewritten. See the [scientific review and sign-off](experiment_011_scientific_review.md).
+- **Experiment 012:** the imperfect-criticism paired decision study remains incomplete. Both P03 A/B decisions failed the frozen validator; preserve them in the attempt accounting. They do not establish improved decision quality. See the [protocol](experiment_012_protocol.md).
+- **Experiment 013:** two high-reasoning model decisions were rejected. A read-only audit identified a genuine wrong-shape evidence citation and unsupported prose in Spark, plus a confirmed negation-sensitive validator false positive in Wonder. One response per model cannot rank model capability. See the [failure analysis](experiment_013_failure_analysis.md).
 
-## GitHub and public evidence
+These records do not demonstrate end-to-end autonomous optimization, a causal pipeline mechanism, or general improvement in Muse research reasoning. Prior Matmul Inspector findings are background evidence rather than new National Tensor speedups.
 
-The project owner reports that the PR containing the README and verified [public evidence bundle](../public_evidence/README.md) was merged into GitHub `main` on October 30. The local checkout inspected for this handoff remains on `day4-muse-cinematic-debrief` at `1aef461` (`Add verified public research evidence bundle`); its local `main` ref is older (`33781d5`). **Check/fetch remote refs before starting new branch or merge work.** This document is not yet committed.
+## Repository and verification
 
-The tracked public bundle covers Experiments 005–009 with allowlisted JSON, a generated summary, source-artifact SHA-256 identifiers, and a standalone verifier. Run `python verify_public_evidence.py public_evidence` from a source-only clone. That verifies bundle integrity and internal arithmetic, **not** independent GPU reproduction. Original Experiment 003–009 run directories under `evaluations/` are ignored by Git and remain local; the public export excludes credentials, raw prompts/responses, local paths, and GPU UUIDs. Regeneration requires those original directories and `.venv/bin/python export_public_evidence.py --output public_evidence`.
+The release branch is `hackathon-research-release`, based on local `main` at `385b222` when prepared. The original `evaluations/` directories, API credentials, raw private model requests/responses, and virtual environment are excluded from the public release. Historical protocols remain linked and unchanged unless a separately documented correction is needed.
 
-## Weaknesses and open questions
+Run from the repository root:
 
-- **Evidence grounding and critic reliability are the next engineering priority.** Five Experiment 009 criticism requests were rejected: four for unsupported numerical claims under the current validator and one for a historical claim without a scoped citation. Examine the preserved audits and validated observation keys before changing prompts or validation rules. Avoid broad prose regexes that imply scientific truth; keep deterministic checks to structure, references, recorded measurements, and explicit arithmetic.
-- Experiment 009 cannot answer whether criticism improves decisions until valid criticism and independent A/B decisions exist for all six proposals, followed by complete blind scoring. Preserve condition isolation and record possible wording-based unblinding.
-- No repeatable Hilbert latency advantage or causal locality mechanism has been established. Tested FP16 GEMMs are representative, not production workloads; results may change across GPUs and toolchains. The environment lacks a complete pinned lockfile.
-- The dashboard's Hollywood mission replay centers on Experiment 003. A cohesive Hilbert → screening → reflection → criticism presentation is a **demo plan**, not an implemented end-to-end scene. Its data should come from validated local records or the public bundle.
-- The human-gated workflow has one registered diagnostic runner and a local loopback UI. Broader autonomous experiment execution and recommendation adoption are not implemented.
+```bash
+python public_pipeline_evidence/verify.py public_pipeline_evidence
+python verify_public_evidence.py public_evidence
+.venv/bin/python -m pytest -q tests/test_pipeline_public_evidence.py tests/test_pipeline_stage_discovery.py tests/test_pipeline_stage_profile_sweep.py tests/test_prospective_k_depth_test.py tests/test_muse_pipeline_hypothesis_study.py
+.venv/bin/python dashboard_app.py
+```
 
-## October 31–November 4 priorities
+The two verifiers and CPU tests make no GPU or Muse request. The listed broader tests validate ignored original records and need an artifact-bearing checkout; source-only clones can run the portable verifiers and the bundle portability/tamper tests selected in the README. The dashboard displays whichever saved local records are present. Reproducing original GPU timings requires compatible hardware, a suitable toolchain, source snapshots, and separately approved runs.
 
-| Date | Intended work |
-| --- | --- |
-| **Oct 31** | Audit the five rejected criticism cases; identify which numerical or citation claims lack valid support. Design a tighter evidence presentation and narrowly scoped validator fixes with CPU fixtures. |
-| **Nov 1** | Implement and test critic-reliability improvements. Keep old accepted/rejected audits immutable; any new Muse attempts must be explicit and separately versioned. |
-| **Nov 2** | Decide whether enough valid criticism exists to finish Experiment 009. If not, report the pilot as incomplete. Draft the demo script and verify every on-screen scientific label against the public bundle. |
-| **Nov 3** | Record the final demo around this date, after a dry run of the actual UI and artifact-backed story. Keep a source-only verification path available for judges. |
-| **Nov 4** | Verify links, bundle integrity, demo playback, submission text, and repository state; submit before **9:00 PM Eastern**. Do not leave the first verification pass to the deadline hour. |
+## Submission priority
 
-These are priorities, not claims that the work has happened. The submission deadline is **November 4, 2026, at 9:00 PM Eastern**.
-
-## Demo and presentation plan
-
-Build the story around a genuine research cycle: **Muse's Hilbert hypothesis → human-reviewed Triton implementation → correctness and GPU screening → Muse reflection → independent research criticism**. Show the public evidence receipt alongside the cinematic UI. A short recorded sequence can use the existing Hollywood interface and narration style, then display the validated Experiment 005–009 evidence in a clearly labeled view or edit. The Experiment 003 mission replay is implemented; the integrated Hilbert story needs design and verification before it can be described as a live feature.
-
-Hollywood narration may be playful, but **presentation must never misrepresent scientific evidence**. Label observed measurements, speculative mechanisms, model judgments, rejected responses, missing stages, and fictional dialogue separately. Do not animate an unrecorded benchmark as a real job, turn screening into confirmation, imply that criticism was accepted for all six proposals, or claim speedup or compute savings. Keep the exact artifact and limitation accessible from the scene. See [Hollywood Mode and Operation Stolen Cycles](dashboard.md#operation-stolen-cycles).
-
-## Next Session
-
-- **Last completed milestone:** README and portable public evidence bundle were added in `1aef461`; the project owner reports their PR merged into `main` on October 30. This handoff documents that state without altering experiments.
-- **Next recommended task:** Improve evidence grounding and critic reliability using the five Experiment 009 rejected criticism audits as fixtures. First map each rejected claim to its available evidence key and validator failure; then make the smallest prompt or deterministic-validation change and run CPU-only tests. Keep scientific judgments for human review.
-- **Start here:** `public_evidence/README.md`, `public_evidence/evidence.json`, `docs/experiment_008.md`, `docs/experiment_009.md`, `muse_research_critic.py`, and `tests/test_muse_research_critic.py`.
-- **Useful commands:** `python verify_public_evidence.py public_evidence`; `.venv/bin/python -m pytest -q tests/test_muse_research_critic.py tests/test_muse_critic_value_study.py tests/test_public_evidence.py`; `.venv/bin/python dashboard_app.py`. The local-only pilot is `20261030T205425148094Z`; `.venv/bin/python muse_critic_value_study.py --validate --run-id 20261030T205425148094Z` requires ignored original artifacts. These commands make no Muse request or GPU benchmark.
+Prepare a short demo that shows the measured stage inversion, the four-capture hardware clues, Muse's **prospective** forecast, and its **inconclusive** held-out score. Link the consolidated report and both portable bundles in the submission. Before November 4, verify the demo playback, README links, bundle integrity, branch state, and submission text. Do not imply that the profile proves causality or that Muse passed the frozen prediction criterion.
