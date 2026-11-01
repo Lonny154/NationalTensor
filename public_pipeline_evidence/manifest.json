@@ -1,0 +1,43 @@
+{
+  "files": {
+    "README.md": "00ec6eb7617951079533388fe652815db6ecd7b3483a5524a28204852908ae97",
+    "evidence.json": "cd8c2099b01544981cb30c1f2fa385d421622b1a4a37d9d9e403281c301ce6cf",
+    "stages_2.ptx": "28d3ebfbc2482491b29646a4bf0c6b5df074f0872767fd5ee902955b64f91b12",
+    "stages_2.ttgir": "a598541de2c7c0c909ce827159c7e7a74d7906002c368077aa06a881fa34443b",
+    "stages_3.ptx": "34037520bff51ec1cc7d656884f504967fabb1077ac856b6ea33032f7c87fe46",
+    "stages_3.ttgir": "0e2826b54c0bef19421c2c24cf8fcb238a49616975e1c1c07eba8a85eb6f9092",
+    "verify.py": "1dab8c44f442791e397311e52b5bb9bbe378a27364882d32f1c27a7d87e22d1b"
+  },
+  "schema": "pipeline_public_evidence_v1",
+  "source_artifacts": {
+    "evaluations/muse-pipeline-hypothesis/v1/20261101T015247349750Z/attempt/result/audit.json": "c384ef6508cec7994155477b80d0cea667093149712c8c26438f773afafaebb5",
+    "evaluations/muse-pipeline-hypothesis/v1/20261101T015247349750Z/attempt/result/manifest.json": "14c0cb9263ab08b6a43b8eecbbf9b8903cf9ef1662dfe975a1d351746224469b",
+    "evaluations/muse-pipeline-hypothesis/v1/20261101T015247349750Z/setup/study.json": "f39ba17b596ae2af2a043804b4b073e4bda29ac772f8e38b886f2bd5bb4c333d",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/confirmation/manifest.json": "bafaf286436e4ec823a26c69b0396d9afdafbdd0f0bb45b2d2eb601de539acff",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/confirmation/result.json": "e18e06cadb27edec24a707c1197914bd0c0fbfe1396392d42472dd8d84831f27",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/confirmation/stages_2.ptx": "06258d6b68c8c484c1b8e406c099b9d9d397661f26dbeb26f8712809e4a5595c",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/confirmation/stages_2.ttgir": "898d8b2bc1d160ca55e410f4bd869f3c29424653057f10528defd79d34f010b5",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/confirmation/stages_3.ptx": "e84dc08a3ca990588e639c6887837c3d1e28319876764d9f6db8e8237ff76ce0",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/confirmation/stages_3.ttgir": "2dc0363b7575c2435e825c1b2a6ad10ef887bb6a4285696d5f07f24511a637d6",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/screening_1/manifest.json": "9ddff27ade974ae2913eb3c89479338e4fc12b57dbfb03fed2a2b2a41e65e87e",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/screening_1/result.json": "d0a40bfecd947c916d77dffde3f50b338d090de1d6c328be70b7cc80b70ae7b7",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/screening_2/manifest.json": "75d63bbb84cae2c136bd99a5219c109c28049f347e6a407d437bec7e2c550b89",
+    "evaluations/pipeline-stage-discovery/v1/20261101T012329698902Z/sessions/screening_2/result.json": "5edd91ca0b0b0ff6a1034a7f8a41508470c95cd6969ff55d1315b129eef19120",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/01_stage_3/manifest.json": "7dda298b12f9d8e632f6d801899ce515aed631b046d17d6008344b8119ef828d",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/01_stage_3/metadata.json": "ef16fce92030627be6c431ea62578f66b4a04bdb1c047909fd5309f392af3fbe",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/01_stage_3/raw.csv": "2cfba7826f1cecbf11e652d896f5f37137769097a32a6f6da98ea6e48527a86b",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/02_stage_2/manifest.json": "cc1312a9d8b3157fbe0a4ee794351c6810956168a84526af8b27dd490c1f520a",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/02_stage_2/metadata.json": "4c792232ae03878852f472ea1addecc072e3bbe219cb371229d8adbb9e23b911",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/02_stage_2/raw.csv": "d4a58cd8f29705ae49ee926d9a003402e8d163ee39d4e1acf685b52ca672ade2",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/03_stage_2/manifest.json": "3451d090baf6b2dd8b3daa7ba6e6764d8e19d5f5dd2770eef1a74984007db46f",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/03_stage_2/metadata.json": "c786ce35d09f84fbe835068fda3555b3d9d89dd619b732bb04f3fc73521ece4c",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/03_stage_2/raw.csv": "bc94983c582b747fa590704cfe15dfdcf720af5303008accd8c30ffecf153e91",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/04_stage_3/manifest.json": "7ffbe9ef5f22df95b48d8adb709e9c9bc6bbab940aedd8112e2490e5829baf14",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/04_stage_3/metadata.json": "cfd145636a7f2246ff212dd0b3a62f11e815195831a47a741714d9217093a328",
+    "evaluations/pipeline-stage-mechanism/v1/20261101T014354664000Z/captures/04_stage_3/raw.csv": "1afd0b529aaa7dd99d513e54393ae83ca4a80fbc0fecfd3a8b3fe4b821a175a2",
+    "evaluations/prospective-k-depth/v1/20261101T020025480962Z/sessions/control_k768/manifest.json": "a7b1ab7ac5f0c68bd98143ddc927543843caa759ba841caa089bd7a6f3032832",
+    "evaluations/prospective-k-depth/v1/20261101T020025480962Z/sessions/control_k768/result.json": "1756a9fe34a2f65dc4ffb4df2afcdacc12b855c2d9340898ec22d02f2b6179f5",
+    "evaluations/prospective-k-depth/v1/20261101T020025480962Z/sessions/target_k1536/manifest.json": "d1185ea0ff2b264c436c31447be1491aae1c1864115432272fc1b7fcbe8a7353",
+    "evaluations/prospective-k-depth/v1/20261101T020025480962Z/sessions/target_k1536/result.json": "043fdad07bb3336ab4bb9cb97fefa11fe5fe7bb73b7476146a4c933c317fe82f"
+  }
+}

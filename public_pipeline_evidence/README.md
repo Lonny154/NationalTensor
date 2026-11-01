@@ -1,0 +1,3 @@
+# Portable pipeline-stage evidence
+
+Run `python verify.py .` from this directory. Python standard library only; no local `evaluations/` directory, GPU, or API key is needed. `evidence.json` contains all raw timing pairs and A/A pairs, selected Nsight metric rows with units, the immutable forecast fields, held-out results, and original artifact SHA-256 identifiers. The included PTX and TTGIR are source-path sanitized copies; their hashes differ from the originals. `manifest.json` verifies the exported files. This verifies internal arithmetic and bundle integrity, not independent reproduction of GPU measurements or authenticity of unavailable original artifacts. Nsight counters are replay measurements, and the forecast outcome is inconclusive.
