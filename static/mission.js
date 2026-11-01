@@ -94,9 +94,10 @@
       dialogue("COMMAND", "Did we solve it?");
       dialogue("AGENT", "No, sir. The direction matched. The official score is inconclusive.");
       dialogue("COMMAND", "Excellent. Prepare the sequel.");
-      button("Switch to Research Mode →", () => {
+      button("Reveal the Real Research →", () => {
         document.querySelector('[data-presentation-choice="research"]').click();
         window.scrollTo({top: 0, behavior: "instant"});
+        window.location.assign(overlay.dataset.overviewUrl);
       });
     }
   }

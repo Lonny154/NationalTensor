@@ -94,6 +94,17 @@ class MissionTests(unittest.TestCase):
         def smoke_script():
             return app.response_class(r'''
 document.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('pipeline-overview-smoke') === 'pending') {
+    sessionStorage.removeItem('pipeline-overview-smoke');
+    if (location.pathname !== '/' || new URL(location).searchParams.get('view') !== 'overview') throw Error('Overview route missing');
+    if (document.documentElement.dataset.presentation !== 'research' || localStorage.getItem('national-tensor-presentation') !== 'research') throw Error('Research Mode preference lost');
+    if (!document.querySelector('#research-overview').getClientRects().length ||
+        !document.querySelector('#research-overview').textContent.includes('preregistered score was inconclusive')) throw Error('Research Overview missing');
+    if (document.querySelector('nav[aria-label="Sections"] a[aria-current="page"]').textContent !== 'Overview') throw Error('navigation state incorrect');
+    if (window.scrollY > 2) throw Error('Overview did not start at top');
+    document.documentElement.dataset.missionSmoke = 'passed';
+    return;
+  }
   const step = new URL(location).searchParams.get('scene');
   document.querySelector('[data-presentation-choice="hollywood"]').click();
   if (step.startsWith('pipeline-')) {
@@ -113,9 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scene === 'prediction' && !body.includes('Before we test it.')) throw Error('prospective sequence missing');
     if (scene === 'reveal' && (!body.includes('inconclusive') || overlay.dataset.vault !== 'open')) throw Error('inconclusive vault reveal missing');
     if (step === 'pipeline-switch') {
+      if (document.querySelector('#mission-controls button').textContent !== 'Reveal the Real Research →') throw Error('transition action missing');
+      sessionStorage.setItem('pipeline-overview-smoke', 'pending');
       document.querySelector('#mission-controls button').click();
-      if (document.documentElement.dataset.presentation !== 'research' || !overlay.hidden ||
-          !document.querySelector('#workflow-status').getClientRects().length) throw Error('Research Mode transition failed');
+      if (document.documentElement.dataset.presentation !== 'research' || !overlay.hidden) throw Error('Research Mode transition failed');
+      return;
     }
     document.documentElement.dataset.missionSmoke = 'passed';
     return;
@@ -146,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         @app.after_request
         def inject(response):
-            if request.path == "/research":
+            if request.path in {"/research", "/"}:
                 response.set_data(response.get_data().replace(
                     b"</head>", b'<script src="/mission-smoke.js" defer></script></head>'))
             return response

@@ -17,6 +17,7 @@
 <div id="mission-overlay" class="mission-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="mission-title"
      data-status-url="{{ url_for('research_status') }}" data-evidence-prefix="/api/research/mission/evidence/"
      data-plan-id="{{ workflow_plan.run_id if workflow_plan else '' }}"
+     data-overview-url="{{ url_for('home', view='overview') }}"
      data-plan="{{ workflow_plan.plan|tojson|forceescape if workflow_plan else '{}' }}"
      data-review="{{ workflow_review.decision if workflow_review else '' }}"
      data-job="{{ mission.job|tojson|forceescape if mission.job else 'null' }}"

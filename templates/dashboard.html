@@ -38,8 +38,37 @@
     {% if view == 'research' %}{% include 'research_workflow.html' %}{% endif %}
     {% if view == 'research_evidence' %}{% include 'research_evidence.html' %}{% endif %}
     {% if view == 'overview' %}
-    <section class="intro">
-      <h1>What needs attention?</h1>
+    <section class="research-overview-lead" id="research-overview" aria-labelledby="research-overview-title">
+      <div class="eyebrow">NATIONAL TENSOR / RESEARCH OVERVIEW</div>
+      <h1 id="research-overview-title">National Tensor <span>— AI-Assisted GPU Performance Research</span></h1>
+      <p class="overview-introduction">National Tensor explores whether AI can help investigate GPU performance problems. Meta Muse proposes and critiques research hypotheses. Human-reviewed experiments test those ideas using Triton kernels, real GPU measurements, and preserved evidence.</p>
+      <div class="overview-research-grid">
+        <section class="overview-feature" aria-labelledby="overview-feature-title">
+          <div class="eyebrow">FEATURED RESEARCH</div>
+          <h2 id="overview-feature-title">The Pipeline Paradox</h2>
+          <p>More pipeline stages ran faster for one reviewed GEMM on an RTX 4060 Ti, with the latency direction independently confirmed. Muse Wonder 1.0 then made a prospective prediction. The held-out result moved in the predicted numerical direction; its preregistered score was <strong>inconclusive</strong>. The cause remains unresolved.</p>
+          <div class="overview-evidence-links"><a href="{{ url_for('pipeline_source', name='report') }}">Technical report →</a><a href="{{ url_for('pipeline_source', name='bundle-readme') }}">Portable evidence bundle →</a></div>
+        </section>
+        <section class="overview-method" aria-labelledby="overview-method-title">
+          <div class="eyebrow">HOW IT WORKS</div>
+          <h2 id="overview-method-title">From question to evidence</h2>
+          <ol>
+            <li><b>Hypothesize</b><span>Muse identifies performance questions and proposes explanations.</span></li>
+            <li><b>Experiment</b><span>Humans approve tests of reviewed kernels on real hardware.</span></li>
+            <li><b>Verify</b><span>Correctness, paired timing, profiler data, and preserved records separate observations from interpretation.</span></li>
+          </ol>
+        </section>
+      </div>
+      <nav class="overview-explore" aria-label="Explore the research">
+        <span>Explore the research</span>
+        <a href="{{ url_for('home', view='timeline') }}">Experiments and timeline →</a>
+        <a href="{{ url_for('home', view='performance') }}">Performance evidence →</a>
+        <a href="{{ url_for('home', view='reliability') }}">Reliability and reproducibility →</a>
+        <a href="{{ url_for('research') }}">Research workflow →</a>
+      </nav>
+    </section>
+    <section class="intro" aria-labelledby="overview-work-title">
+      <h2 id="overview-work-title">What needs attention?</h2>
       <p>Review the next research step. Every result remains linked to its verified record.</p>
       <a class="primary-link" href="{{ url_for('research') }}">Review research workflow →</a>
     </section>
