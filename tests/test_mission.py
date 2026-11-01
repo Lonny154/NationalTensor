@@ -92,22 +92,31 @@ class MissionTests(unittest.TestCase):
 
         @app.get("/mission-smoke.js")
         def smoke_script():
-            return app.response_class('''
+            return app.response_class(r'''
 document.addEventListener('DOMContentLoaded', () => {
   const step = new URL(location).searchParams.get('scene');
   document.querySelector('[data-presentation-choice="hollywood"]').click();
   if (step.startsWith('pipeline-')) {
     document.querySelector('[data-mission-open="pipeline"]').click();
-    const scene = step.slice('pipeline-'.length);
+    const scene = step === 'pipeline-switch' ? 'reveal' : step.slice('pipeline-'.length);
     const count = {anomaly:0, investigation:1, prediction:2, reveal:3}[scene];
     for (let i = 0; i < count; i++) document.querySelector('#mission-controls button').click();
     const overlay = document.querySelector('#mission-overlay');
     const body = document.querySelector('#mission-body').textContent;
     if (overlay.dataset.scene !== scene) throw Error('pipeline scene mismatch');
-    if (scene === 'anomaly' && !body.includes('13 / 14')) throw Error('confirmation missing');
-    if (scene === 'investigation' && !body.includes('27.51%')) throw Error('occupancy missing');
-    if (scene === 'prediction' && !body.includes('0.953121')) throw Error('forecast missing');
-    if (scene === 'reveal' && (!body.includes('0.946341') || !body.includes('INCONCLUSIVE'))) throw Error('score missing');
+    const titles = {anomaly:'THE IMPOSSIBLE HAS HAPPENED.', investigation:'SOMETHING IS HIDING IN THE HARDWARE.', prediction:'THE ORACLE HAS SPOKEN.', reveal:'WE HAVE A LEAD. NOT A CONVICTION.'};
+    if (document.querySelector('#mission-title').textContent !== titles[scene]) throw Error('pipeline headline missing');
+    if (document.querySelectorAll('#mission-controls button').length !== 1) throw Error('pipeline action count');
+    if (document.querySelectorAll('#mission-body .pipeline-dialogue').length !== (scene === 'reveal' ? 3 : 2)) throw Error('dialogue count');
+    if (document.querySelector('#mission-body .mission-fact') || /0\.9\d{4}|warps\/cycle|bootstrap/i.test(body)) throw Error('technical detail leaked into replay');
+    if (getComputedStyle(document.querySelector('.mission-debrief')).display !== 'none') throw Error('unrelated debrief visible');
+    if (scene === 'prediction' && !body.includes('Before we test it.')) throw Error('prospective sequence missing');
+    if (scene === 'reveal' && (!body.includes('inconclusive') || overlay.dataset.vault !== 'open')) throw Error('inconclusive vault reveal missing');
+    if (step === 'pipeline-switch') {
+      document.querySelector('#mission-controls button').click();
+      if (document.documentElement.dataset.presentation !== 'research' || !overlay.hidden ||
+          !document.querySelector('#workflow-status').getClientRects().length) throw Error('Research Mode transition failed');
+    }
     document.documentElement.dataset.missionSmoke = 'passed';
     return;
   }
@@ -153,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             thread.start()
             try:
                 for scene in ("briefing", "hack", "vault", "live-complete", "pipeline-anomaly",
-                              "pipeline-investigation", "pipeline-prediction", "pipeline-reveal"):
+                              "pipeline-investigation", "pipeline-prediction", "pipeline-reveal", "pipeline-switch"):
                     name = {"briefing": "locked", "hack": "archive-scanning", "vault": "revealed",
                             "live-complete": "live-complete"}.get(scene, scene)
                     result = subprocess.run([os.environ["NT_MISSION_BROWSER"], "--headless", "--no-sandbox",

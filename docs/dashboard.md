@@ -40,22 +40,19 @@ uses the verified `public_pipeline_evidence/` bundle and makes no GPU or Muse
 request. If verification fails, its button is disabled. The older Experiment
 003 replay and separate live authorization controls remain available.
 
-For a 2–3 minute recording, click through these four scenes:
+For a comfortable 25–35-second recording, start with the Pipeline Paradox
+button in frame, then click through **Anomaly → Investigation → Prediction →
+Reveal**. Allow roughly 5–7 seconds for each short exchange and a little longer
+for the vault to open on the final scene. End by clicking **Switch to Research
+Mode**, where the technical record can be inspected. The single scene button
+advances only on a click; there is no countdown or autoplay.
 
-1. **Anomaly:** show the independent 0.956221 ratio and 13/14 favorable pairs.
-2. **Investigation:** show 27.51% versus 15.86% active-warps occupancy, broad
-   stall counters, saved compiler differences, and competing explanations.
-   Say that these observations do not prove causality.
-3. **Prediction:** show Wonder 1.0's frozen `lower` K=1536 forecast and the
-   historical 0.953121 reference. It gave no point estimate or range and was
-   not told the numerical scoring deadband.
-4. **Reveal:** show 0.946341 target, 0.951886 fresh control, and the
-   **inconclusive** preregistered outcome. The direction matched, but the
-   target stayed inside the frozen near band and moved less than A/A variation.
-
-Use **Skip effects** or the operating system's reduced-motion preference if
-needed. The vault animation is decorative. Evidence links open the local
-portable bundle or report; keep the final score visible for the closing shot.
+The dialogue is a parody. The reveal says the observed direction matched but
+the preregistered prediction outcome was **inconclusive**. The overlay's small
+“Dramatized replay / no live GPU” label distinguishes it from execution. No
+performance numbers or profiler tables appear in the cinematic scenes. Use
+**Skip effects** or the operating system's reduced-motion preference if needed.
+The vault animation is decorative.
 
 ### Operation Stolen Cycles
 
