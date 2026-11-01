@@ -170,7 +170,27 @@
     {% endif %}
 
     {% if view == 'performance' %}
-    <section class="section-title"><h1>What was measured?</h1><p>These are saved paired screenings, not confirmed improvements. Open a record for raw timings.</p></section>
+    <section class="section-title"><h1>What did we measure?</h1><p>The Pipeline Paradox has a separate independent confirmation. These are saved paired screenings, not confirmed improvements. Open a record for raw timings.</p></section>
+    {% if pipeline_feature %}
+    <section class="pipeline-feature" aria-labelledby="pipeline-performance-title">
+      <div class="pipeline-kicker">FEATURED RESULT · VERIFIED PORTABLE EVIDENCE</div>
+      <h2 id="pipeline-performance-title">The Pipeline Paradox</h2>
+      <p class="pipeline-lead">Three Triton pipeline stages ran faster than two for this FP16 GEMM.</p>
+      <p class="pipeline-context">{{ pipeline_feature.hardware }} · M={{ pipeline_feature.shape_mnk[0] }}, N={{ pipeline_feature.shape_mnk[1] }}, K={{ pipeline_feature.shape_mnk[2] }} · tile 64 × 128 × 32 · four warps</p>
+      <div class="pipeline-performance-grid">
+        <div class="pipeline-hero-metric"><strong>{{ '%.6f'|format(pipeline_feature.confirmation_ratio) }}</strong><span>median paired stage-3 / stage-2 latency ratio</span><small>Independent confirmation · {{ pipeline_feature.favorable_pairs }} of {{ pipeline_feature.total_pairs }} pairs favored stage 3</small></div>
+        <div class="pipeline-chart" role="img" aria-label="Independent confirmation marginal median latency: stage 2 {{ '%.2f'|format(pipeline_feature.confirmation_stage2_us) }} microseconds; stage 3 {{ '%.2f'|format(pipeline_feature.confirmation_stage3_us) }} microseconds">
+          <div class="pipeline-chart-title">Median latency per launch <span>lower is faster</span></div>
+          <div class="pipeline-bar-row"><span>Stage 2</span><div class="pipeline-track"><i class="pipeline-bar stage-two" style="width:100%"></i></div><b>{{ '%.2f'|format(pipeline_feature.confirmation_stage2_us) }} µs</b></div>
+          <div class="pipeline-bar-row"><span>Stage 3</span><div class="pipeline-track"><i class="pipeline-bar stage-three" style="width:{{ '%.2f'|format(100 * pipeline_feature.confirmation_stage3_us / pipeline_feature.confirmation_stage2_us) }}%"></i></div><b>{{ '%.2f'|format(pipeline_feature.confirmation_stage3_us) }} µs</b></div>
+          <small>Bar lengths use marginal medians; the headline ratio is the median of paired ratios.</small>
+        </div>
+      </div>
+      <div class="pipeline-facts"><div><b>{{ '%.2f'|format(100 * (1 - pipeline_feature.confirmation_ratio)) }}%</b><span>lower paired median latency ratio</span></div><div><b>{{ '%.6f'|format(pipeline_feature.confirmation_interval[0]) }}–{{ '%.6f'|format(pipeline_feature.confirmation_interval[1]) }}</b><span>descriptive bootstrap interval</span></div><div><b>Passed</b><span>{{ pipeline_feature.confirmation_correctness }} scoped correctness checks</span></div></div>
+      <p class="pipeline-footnote">Earlier screening ratios: {{ '%.6f'|format(pipeline_feature.screening_ratios[0]) }} and {{ '%.6f'|format(pipeline_feature.screening_ratios[1]) }}. The featured result is the separate confirmation session.</p>
+      <div class="pipeline-links"><a href="{{ url_for('pipeline_source', name='report') }}">Technical report →</a><a href="{{ url_for('pipeline_source', name='bundle-readme') }}">Verify portable evidence →</a></div>
+    </section>
+    {% else %}<section class="pipeline-unavailable" role="status"><h2>Pipeline Paradox evidence unavailable</h2><p>{{ pipeline_feature_warning }} The saved performance records below remain available.</p></section>{% endif %}
     <details class="progressive-section"><summary>Compare {{ performance_events|length }} measured screenings</summary>
     <section class="panel"><div class="table-wrap"><table><thead><tr><th>Experiment</th><th>Workload</th><th>Method</th><th>Baseline median</th><th>Candidate median</th><th>Paired ratio</th><th>Decision</th></tr></thead><tbody>
       {% for item in performance_events %}{% set measured = item.measurement %}
@@ -182,7 +202,23 @@
     {% endif %}
 
     {% if view == 'reliability' %}
-    <section class="section-title"><h1>Can we trust the timing?</h1><p>A/A checks reveal measurement variability. Python launches and CUDA Graph replay remain separate.</p></section>
+    <section class="section-title"><h1>How much can we conclude?</h1><p>The measured latency direction is clear under this harness. Its cause and the held-out prediction remain uncertain.</p></section>
+    {% if pipeline_feature %}
+    <section class="pipeline-feature" aria-labelledby="pipeline-reliability-title">
+      <div class="pipeline-kicker">FEATURED INTERPRETATION · VERIFIED PORTABLE EVIDENCE</div>
+      <h2 id="pipeline-reliability-title">The occupancy paradox</h2>
+      <p class="pipeline-lead">Stage 3 was faster even with fewer active warps. Higher occupancy did not imply better latency here.</p>
+      <div class="pipeline-occupancy-grid"><div class="pipeline-chart" role="img" aria-label="Measured active-warps occupancy: stage 2 {{ '%.2f'|format(pipeline_feature.occupancy_stage2) }} percent; stage 3 {{ '%.2f'|format(pipeline_feature.occupancy_stage3) }} percent">
+        <div class="pipeline-chart-title">Measured active-warps occupancy <span>four selected captures</span></div>
+        <div class="pipeline-bar-row"><span>Stage 2</span><div class="pipeline-track"><i class="pipeline-bar stage-two" style="width:{{ pipeline_feature.occupancy_stage2 }}%"></i></div><b>{{ '%.2f'|format(pipeline_feature.occupancy_stage2) }}%</b></div>
+        <div class="pipeline-bar-row"><span>Stage 3</span><div class="pipeline-track"><i class="pipeline-bar stage-three" style="width:{{ pipeline_feature.occupancy_stage3 }}%"></i></div><b>{{ '%.2f'|format(pipeline_feature.occupancy_stage3) }}%</b></div>
+        <small>Bars use a 0–100% occupancy scale.</small>
+      </div><div class="pipeline-verdict"><b>{{ '%.6f'|format(pipeline_feature.confirmation_ratio) }}</b><span>independently confirmed median stage-3 / stage-2 latency ratio</span><small>Stage 3 faster under measured conditions.</small></div></div>
+      <div class="pipeline-prediction"><div><div class="pipeline-kicker">MUSE'S HELD-OUT PREDICTION</div><h3>Direction matched. Outcome inconclusive.</h3><p>Muse predicted a lower ratio when K doubled to 1536. The target moved lower, but the preregistered result was <strong>{{ pipeline_feature.prediction_score|upper }}</strong>.</p></div><div class="pipeline-prediction-values"><div><b>{{ '%.6f'|format(pipeline_feature.reference_ratio) }}</b><span>frozen K=768 reference</span></div><div><b>{{ '%.6f'|format(pipeline_feature.target_ratio) }}</b><span>K=1536 held-out target</span></div><div><b>{{ '%.6f'|format(pipeline_feature.control_ratio) }}</b><span>fresh K=768 control</span></div></div></div>
+      <details class="pipeline-technical"><summary>Evidence, uncertainty, and compiler detail</summary><div class="pipeline-technical-body"><p><strong>{{ pipeline_feature.profile_captures }} selected Nsight Compute captures</strong> showed long-scoreboard and barrier stall differences. Saved compiler output differs in async-copy buffering and wait policies; shared memory was {{ '%.0f'|format(pipeline_feature.compiler_stage2_shared_kib) }} KiB for stage 2 and {{ '%.0f'|format(pipeline_feature.compiler_stage3_shared_kib) }} KiB for stage 3.</p><p>A/A variability, substantial state differences between captures, and target-before-control measurement order limit interpretation. The target's movement from the frozen reference was smaller than recorded A/A variation. These observations do not establish a causal mechanism or statistically establish Muse's prediction.</p><p>The held-out target interval was {{ '%.6f'|format(pipeline_feature.target_interval[0]) }}–{{ '%.6f'|format(pipeline_feature.target_interval[1]) }} (descriptive bootstrap). The frozen scoring deadband was ±{{ '%.2f'|format(pipeline_feature.deadband) }} absolute ratio.</p><a href="{{ url_for('pipeline_source', name='report') }}">Technical report →</a> · <a href="{{ url_for('pipeline_source', name='forecast-protocol') }}">Frozen prediction protocol →</a> · <a href="{{ url_for('pipeline_source', name='bundle-readme') }}">Portable evidence →</a></div></details>
+    </section>
+    {% else %}<section class="pipeline-unavailable" role="status"><h2>Pipeline Paradox evidence unavailable</h2><p>{{ pipeline_feature_warning }} The saved reliability records below remain available.</p></section>{% endif %}
+    <p class="subtle">A/A checks reveal measurement variability. Python launches and CUDA Graph replay remain separate.</p>
     <details class="progressive-section"><summary>A/A calibration captures</summary>
     <section class="panel"><div class="panel-head"><div><div class="eyebrow">COUNTERBALANCED MODE ORDER</div><h2>Python launches and CUDA Graph replay</h2></div></div>
       <div class="table-wrap"><table><thead><tr><th>Capture</th><th>Mode order</th><th>Measurement mode</th><th>A/A median absolute ratio deviation</th><th>Baseline CV</th><th>Candidate CV</th></tr></thead><tbody>

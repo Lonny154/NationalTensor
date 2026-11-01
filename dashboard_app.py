@@ -472,6 +472,12 @@ def create_app(root: Path = ROOT) -> Flask:
         if "csrf_token" not in session:
             session["csrf_token"] = secrets.token_urlsafe(32)
         history = decorate_history(load_history(root))
+        pipeline_feature, pipeline_feature_warning = None, None
+        if view in {"performance", "reliability"}:
+            try:
+                pipeline_feature = pipeline_mission(root)
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                pipeline_feature_warning = f"Portable pipeline evidence unavailable: {exc}"
         selected_filter = request.args.get("filter", "all")
         if view == "timeline" and selected_filter not in TIMELINE_FILTERS:
             abort(400)
@@ -550,6 +556,7 @@ def create_app(root: Path = ROOT) -> Flask:
             timeline_filters=TIMELINE_FILTERS, timeline_filter=selected_filter,
             activity_warnings=activity["warnings"] if activity else [],
             performance_events=activity_links(activity["performance"]) if activity else [],
+            pipeline_feature=pipeline_feature, pipeline_feature_warning=pipeline_feature_warning,
             csrf_token=session["csrf_token"], proposal_model=PROPOSAL_MODEL)
 
     return app

@@ -34,6 +34,10 @@ explicit. Both modes use the same protected forms and validated evidence.
 
 ### Pipeline Paradox recording guide
 
+For the three-minute judge video, use **Hollywood Mode → Overview → Performance → Reliability → Closing**. Start the Hollywood replay at `/research`, advance through its four scenes, and select **Reveal the Real Research →** to land on Overview. After a short introduction, open **Performance** and keep the featured Pipeline Paradox card in frame: point to the independent confirmation ratio, the two latency bars, 13/14 favorable pairs, and the descriptive interval. Then open **Reliability**: compare the occupancy bars, show the inconclusive held-out score, and expand the technical detail only if time allows. Close on the consolidated report and portable evidence links. At 1920×1080, the featured content appears above the older expandable records; use normal browser zoom and avoid scrolling into the large historical tables during the short explanation.
+
+The Performance bars show marginal median latency per launch, while the headline is the median of paired stage-3/stage-2 ratios. The Reliability occupancy bars use a 0–100% scale. Both featured cards require successful verification of `public_pipeline_evidence/`; if the bundle is missing or invalid, they show an unavailable message and leave historical records accessible. Navigation and the replay read saved evidence only. Do not use the separate live workflow controls during this recording.
+
 Run `.venv/bin/python dashboard_app.py`, open `http://127.0.0.1:8501/research`,
 switch to **Hollywood Mode**, and select **Replay Pipeline Paradox**. The replay
 uses the verified `public_pipeline_evidence/` bundle and makes no GPU or Muse
@@ -247,10 +251,10 @@ The hypothesis/evidence comparison is available only for the two trusted
 studies with matching saved Muse and trusted-source hashes. It distinguishes
 the generated proposal from the independently written kernel.
 
-This MVP understands the committed Day 2 structural-loop JSONL, accepted
-kernel-evolution directories, and the two trusted experiment layouts. It
-ignores prepared-only requests and older Day 1 search formats. Missing optional
-files are omitted or reported as artifact warnings. No screening ratio is
-treated as confirmation or statistical significance. No current confirmation
-artifact is loaded; a future confirmation format would need an explicit
-verified-artifact loader before the UI can show **Confirmed**.
+The historical record loader understands the committed Day 2 structural-loop
+JSONL, accepted kernel-evolution directories, and the two trusted experiment
+layouts. It ignores prepared-only requests and older Day 1 search formats.
+Missing optional files are omitted or reported as artifact warnings. No
+screening ratio is treated as confirmation or statistical significance. The
+featured Pipeline Paradox confirmation is loaded separately from the verified
+portable bundle; it does not reclassify older experiment rows.
