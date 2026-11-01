@@ -11,9 +11,10 @@ from pathlib import Path
 import re
 import secrets
 
-from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, abort, jsonify, redirect, render_template, request, send_file, session, url_for
 from dashboard_hollywood import mission_state
 from dashboard_mission import HISTORICAL_ID, mission_evidence
+from dashboard_pipeline_mission import pipeline_mission
 
 from dashboard_data import ROOT, load_compiler_detail, load_history
 from dashboard_interpretation import decorate_history
@@ -390,17 +391,39 @@ def create_app(root: Path = ROOT) -> Flask:
         except ValueError as exc:
             wild_context, wild_ideas, wild_warning = None, None, str(exc)
         hilbert_result = experiment_005_evidence.latest(root)
+        try:
+            pipeline_replay = pipeline_mission(root)
+            pipeline_warning = None
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            pipeline_replay, pipeline_warning = None, f"Portable pipeline evidence unavailable: {exc}"
         return render_template("dashboard.html", view="research", csrf_token=session["csrf_token"],
             workflow_plans=plans, workflow_plan=selected_plan, workflow_review=review,
             workflow_binding=eligibility, workflow_blocked=blocked, workflow_evidence=evidence,
             workflow_state=state, workflow_warnings=warnings + memory["warnings"],
             workflow_runner=RUNNER_ID,
             mission_replay=mission_evidence(root, historical) if historical else None,
+            pipeline_replay=pipeline_replay, pipeline_warning=pipeline_warning,
             muse_debrief=debrief, muse_debrief_package=debrief_package, muse_debrief_warning=debrief_warning,
             research_package=research_package, research_proposal=research_proposal, research_warning=research_warning,
             wild_context=wild_context, wild_ideas=wild_ideas, wild_warning=wild_warning,
             hilbert_result=hilbert_result,
             mission=mission_state(selected_plan, review, state, blocked, {row["id"]: row for row in memory["entries"]}))
+
+    @app.get("/research/pipeline/source/<name>")
+    def pipeline_source(name):
+        sources = {
+            "evidence.json": "public_pipeline_evidence/evidence.json",
+            "bundle-readme": "public_pipeline_evidence/README.md",
+            "report": "docs/pipeline_stage_consolidated_report.md",
+            "forecast-protocol": "docs/prospective_pipeline_hypothesis_protocol.md",
+        }
+        if name not in sources:
+            abort(404)
+        try:
+            pipeline_mission(root)
+        except (OSError, ValueError, KeyError, TypeError):
+            abort(404)
+        return send_file(root / sources[name])
 
     @app.get("/research/evidence/<path:evidence_id>")
     def research_evidence(evidence_id):

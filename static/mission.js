@@ -5,6 +5,7 @@
   const $ = id => document.getElementById(id);
   const plan = JSON.parse(overlay.dataset.plan);
   const replay = JSON.parse(overlay.dataset.replay);
+  const pipeline = JSON.parse(overlay.dataset.pipeline);
   const initialJob = JSON.parse(overlay.dataset.job);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   let mode = "live", job = initialJob, timer = null, sound = false, audioContext = null;
@@ -55,13 +56,60 @@
     } catch (_) { sound = false; $("mission-sound").textContent = "Sound unavailable"; }
   }
   function paint(step, title, quote) {
-    $("mission-step").textContent = ({briefing:"01 / BRIEFING", authorization:"02 / AUTHORIZATION", hack:"03 / THE HACK", vault:"04 / THE VAULT", failed:"04 / MISSION REPORT"})[step];
+    $("mission-step").textContent = ({briefing:"01 / BRIEFING", authorization:"02 / AUTHORIZATION", hack:"03 / THE HACK", vault:"04 / THE VAULT", failed:"04 / MISSION REPORT", anomaly:"01 / THE ANOMALY", investigation:"02 / THE INVESTIGATION", prediction:"03 / THE PREDICTION", reveal:"04 / THE REVEAL"})[step];
     $("mission-title").textContent = title;
     $("mission-quote").textContent = quote;
     $("mission-body").replaceChildren();
     $("mission-controls").replaceChildren();
     overlay.dataset.scene = step;
     cue();
+  }
+  const ratio = value => Number(value).toFixed(6);
+  function pipelineScene(scene) {
+    if (scene === "anomaly") {
+      paint(scene, "THE STAGE INVERSION", "“The extra stage arrived first.”");
+      vaultState("archive", "ARCHIVE REPLAY / NO GPU JOB");
+      story("MEASURED / RTX 4060 Ti", "At FP16 512 × 3072 × 768, the reviewed stage-3 GEMM beat stage 2 in an independent confirmation session. CUDA events measured eager launch blocks; this is a scoped latency result.");
+      line("Stage 3 / stage 2", ratio(pipeline.confirmation_ratio));
+      line("Paired wins", pipeline.favorable_pairs + " / " + pipeline.total_pairs + " favor stage 3");
+      line("Evidence", "Verified portable bundle · independent confirmation");
+      link("Inspect raw timing pairs →", "/research/pipeline/source/evidence.json");
+      button("Investigate the hardware clues", () => pipelineScene("investigation"));
+    } else if (scene === "investigation") {
+      paint(scene, "THE OCCUPANCY CLUE", "“The busier kernel lost.”");
+      vaultState("archive", "NSIGHT REPLAY / FOUR CAPTURES");
+      story("OBSERVED / NOT CAUSAL", "A 3–2–2–3 Nsight sweep found higher active-warps occupancy for the slower stage 2. Broad stall counters and saved compiler differences suggest avenues to test, but do not identify the cause.");
+      line("Active warps", "Stage 2: " + pipeline.occupancy_stage2.toFixed(2) + "% · Stage 3: " + pipeline.occupancy_stage3.toFixed(2) + "%");
+      line("Long scoreboard", "Stage 2: " + pipeline.long_stall_stage2.join(" / ") + " · Stage 3: " + pipeline.long_stall_stage3.join(" / ") + " warps/cycle");
+      line("Barrier stalls", "Stage 2: " + pipeline.barrier_stage2.join(" / ") + " · Stage 3: " + pipeline.barrier_stage3.join(" / ") + " warps/cycle");
+      line("Compiler", "Matched TTIR; different async-copy buffering and wait policy in saved lowered code");
+      line("Competing explanations", "Latency hiding, lowered-code scheduling, cache behavior, or timing state");
+      link("Read mechanism evidence and limits →", "/research/pipeline/source/report");
+      button("Open the frozen forecast", () => pipelineScene("prediction"));
+    } else if (scene === "prediction") {
+      paint(scene, "A FORECAST IS SEALED", "“Double K. Which way does the ratio move?”");
+      vaultState("locked", "FORECAST FROZEN / TARGET HELD OUT");
+      story("MUSE INTERPRETATION / BEFORE TARGET TIMING", "Muse Wonder 1.0 chose the anomaly from a neutral evidence package and predicted a lower stage-3/stage-2 ratio when K doubles from 768 to 1536. It supplied no defensible point estimate or range.");
+      line("Frozen K=768 reference", ratio(pipeline.reference_ratio));
+      line("Predicted direction", pipeline.prediction_direction + " ratio at K=1536");
+      line("Competing hypothesis", "Timing-boundary and state artifact");
+      line("Scoring rule", "±" + pipeline.deadband.toFixed(2) + " absolute-ratio deadband, frozen before target timing; Muse did not see its numerical value");
+      link("Inspect prospective protocol →", "/research/pipeline/source/forecast-protocol");
+      button("Reveal the held-out measurement", () => pipelineScene("reveal"));
+    } else {
+      paint("reveal", "DIRECTION MATCHED. SCORE INCONCLUSIVE.", "“A clue is not a verdict.”");
+      vaultState("open", "VERIFIED EVIDENCE / INCONCLUSIVE SCORE");
+      story("HELD OUT / FIRST TARGET SESSION", "The K=1536 ratio moved numerically lower. The preregistered rule classifies it as near, and the movement is smaller than A/A variation. The target ran before a fresh K=768 control, leaving measurement state as a confounder.");
+      line("Historical K=768 reference", ratio(pipeline.reference_ratio));
+      line("Held-out K=1536 target", ratio(pipeline.target_ratio));
+      line("Fresh K=768 control", ratio(pipeline.control_ratio));
+      line("Target bootstrap interval", pipeline.target_interval.map(ratio).join("–") + " · descriptive");
+      line("Preregistered outcome", pipeline.prediction_score.toUpperCase() + " · neither hit nor miss");
+      line("Scientific boundary", "No causal pipeline-overlap claim; no general Muse capability claim");
+      link("Inspect portable evidence and verifier →", "/research/pipeline/source/bundle-readme");
+      button("Replay from the anomaly", () => pipelineScene("anomaly"));
+      button("Close dossier", close);
+    }
   }
   function briefing() {
     paint("briefing", "OPERATION STOLEN CYCLES", "“The compiler is hiding something.”");
@@ -208,12 +256,15 @@
   }
   function open(kind, startHack=false) {
     if (kind === "replay" && !replay) return;
+    if (kind === "pipeline" && !pipeline) return;
     mode = kind;
     previousFocus = document.activeElement;
     overlay.hidden = false;
     document.documentElement.setAttribute("data-mission-active", "");
-    $("mission-kind").textContent = kind === "replay" ? "HISTORICAL EVIDENCE REPLAY / NO GPU EXECUTION" : "LIVE MISSION / REAL JOB STATES";
-    (startHack && job ? hack : briefing)();
+    $("mission-kind").textContent = kind === "pipeline" ? "PIPELINE RESEARCH REPLAY / NO GPU OR MUSE CALL" : kind === "replay" ? "HISTORICAL EVIDENCE REPLAY / NO GPU EXECUTION" : "LIVE MISSION / REAL JOB STATES";
+    $("mission-asset").textContent = kind === "pipeline" ? "PIPELINE STAGE / RESEARCH ARCHIVE" : "ASSET 003 / GPU COMPILER VAULT";
+    if (kind === "pipeline") pipelineScene("anomaly");
+    else (startHack && job ? hack : briefing)();
     $("mission-close").focus();
   }
   document.querySelectorAll("[data-mission-open]").forEach(node => node.addEventListener("click", () => open(node.dataset.missionOpen)));

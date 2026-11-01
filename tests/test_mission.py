@@ -96,6 +96,21 @@ class MissionTests(unittest.TestCase):
 document.addEventListener('DOMContentLoaded', () => {
   const step = new URL(location).searchParams.get('scene');
   document.querySelector('[data-presentation-choice="hollywood"]').click();
+  if (step.startsWith('pipeline-')) {
+    document.querySelector('[data-mission-open="pipeline"]').click();
+    const scene = step.slice('pipeline-'.length);
+    const count = {anomaly:0, investigation:1, prediction:2, reveal:3}[scene];
+    for (let i = 0; i < count; i++) document.querySelector('#mission-controls button').click();
+    const overlay = document.querySelector('#mission-overlay');
+    const body = document.querySelector('#mission-body').textContent;
+    if (overlay.dataset.scene !== scene) throw Error('pipeline scene mismatch');
+    if (scene === 'anomaly' && !body.includes('13 / 14')) throw Error('confirmation missing');
+    if (scene === 'investigation' && !body.includes('27.51%')) throw Error('occupancy missing');
+    if (scene === 'prediction' && !body.includes('0.953121')) throw Error('forecast missing');
+    if (scene === 'reveal' && (!body.includes('0.946341') || !body.includes('INCONCLUSIVE'))) throw Error('score missing');
+    document.documentElement.dataset.missionSmoke = 'passed';
+    return;
+  }
   if (step === 'live-complete') {
     document.querySelector('[data-mission-open="live"]').click();
     const next = () => document.querySelector('#mission-controls button').click();
@@ -137,9 +152,10 @@ document.addEventListener('DOMContentLoaded', () => {
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             try:
-                for scene in ("briefing", "hack", "vault", "live-complete"):
+                for scene in ("briefing", "hack", "vault", "live-complete", "pipeline-anomaly",
+                              "pipeline-investigation", "pipeline-prediction", "pipeline-reveal"):
                     name = {"briefing": "locked", "hack": "archive-scanning", "vault": "revealed",
-                            "live-complete": "live-complete"}[scene]
+                            "live-complete": "live-complete"}.get(scene, scene)
                     result = subprocess.run([os.environ["NT_MISSION_BROWSER"], "--headless", "--no-sandbox",
                         "--disable-gpu", "--disable-dev-shm-usage", "--no-proxy-server", "--no-first-run",
                         "--disable-background-networking", "--force-prefers-reduced-motion", "--user-data-dir=" + profile,
