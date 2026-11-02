@@ -2,7 +2,7 @@
 
 National Tensor connects **Meta Muse**, reviewed **Triton** kernels, real GPU measurements, and evidence checks into a research workflow. Muse proposes and critiques ideas; people approve experiments; immutable records keep measured results separate from explanations. Our hackathon result is a counterintuitive pipeline-stage latency pattern and a prospective AI prediction tested on held-out hardware.
 
-**Demo video:** coming before the November 4 hackathon submission. No video is published yet.
+**Demo video:** the three-minute walkthrough has been rehearsed and recorded. Playback review, final export, publication, and hackathon submission remain pending for November 4; no public video link is available yet.
 
 ## Featured result: more pipeline stages, faster GEMM
 
@@ -33,6 +33,8 @@ The target moved in Muse's predicted numerical direction. **The preregistered pr
 These lines of work share a rule: a plausible model explanation is a hypothesis until a discriminating experiment supports it. Prior Matmul Inspector work supplied compiler and profiler context; it is not presented as a new National Tensor speedup.
 
 ## Verify and explore
+
+The recorded demo follows the four-scene **Pipeline Paradox** Hollywood parody, then **Reveal the Real Research →** opens Research Overview. Performance presents the verified confirmation, and Reliability presents the occupancy clues and inconclusive held-out forecast. The [dashboard guide](docs/dashboard.md) gives the recording path.
 
 From a source-only clone, both portable bundles verify with **Python's standard library**. These commands check hashes and internal arithmetic; they do not rerun GPU measurements or require local `evaluations/` directories:
 

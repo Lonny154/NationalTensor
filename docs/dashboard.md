@@ -34,7 +34,7 @@ explicit. Both modes use the same protected forms and validated evidence.
 
 ### Pipeline Paradox recording guide
 
-For the three-minute judge video, use **Hollywood Mode → Overview → Performance → Reliability → Closing**. Start the Hollywood replay at `/research`, advance through its four scenes, and select **Reveal the Real Research →** to land on Overview. After a short introduction, open **Performance** and keep the featured Pipeline Paradox card in frame: point to the independent confirmation ratio, the two latency bars, 13/14 favorable pairs, and the descriptive interval. Then open **Reliability**: compare the occupancy bars, show the inconclusive held-out score, and expand the technical detail only if time allows. Close on the consolidated report and portable evidence links. At 1920×1080, the featured content appears above the older expandable records; use normal browser zoom and avoid scrolling into the large historical tables during the short explanation.
+The three-minute judge video has been rehearsed and recorded; playback review, final export, publication, and submission are pending. Its path is **Hollywood Mode → Research Overview → Performance → Reliability → Closing**. Start the Hollywood replay at `/research`, advance through its four scenes, and select **Reveal the Real Research →** to land on Research Overview. After a short introduction, open **Performance** and keep the featured Pipeline Paradox card in frame: point to the independent confirmation ratio, the two latency bars, 13/14 favorable pairs, and the descriptive interval. Then open **Reliability**: compare the occupancy bars, show the inconclusive held-out score, and expand the technical detail only if time allows. Close on the consolidated report and portable evidence links. At 1920×1080, the featured content appears above the older expandable records; use normal browser zoom and avoid scrolling into the large historical tables during the short explanation.
 
 The Performance bars show marginal median latency per launch, while the headline is the median of paired stage-3/stage-2 ratios. The Reliability occupancy bars use a 0–100% scale. Both featured cards require successful verification of `public_pipeline_evidence/`; if the bundle is missing or invalid, they show an unavailable message and leave historical records accessible. Navigation and the replay read saved evidence only. Do not use the separate live workflow controls during this recording.
 
@@ -175,7 +175,7 @@ created for those files.
 `GET /api/research/timeline?filter=all` exposes the same renderer-neutral event
 data and evidence links. The other filter keys are `scientific`, `compiler`,
 `decisions`, and `workflow`. This projection can support a future Mission
-History view; no Hollywood Mode is implemented here.
+History view; the current Hollywood Mode reads the same saved records.
 
 Only one request runs at a time in the server process. The five states are
 Ready, Requesting proposal, Validating response, Saved for review, and Failed.
