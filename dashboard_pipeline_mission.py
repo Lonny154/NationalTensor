@@ -2,13 +2,13 @@
 
 import json
 from pathlib import Path
-import runpy
+
+from verify_pipeline_public_evidence import verify
 
 
 def pipeline_mission(root):
     bundle = Path(root) / "public_pipeline_evidence"
-    # run_path avoids generating __pycache__ inside the exact-file-set bundle.
-    verification = runpy.run_path(str(bundle / "verify.py"))["verify"](bundle)
+    verification = verify(bundle)
     data = json.loads((bundle / "evidence.json").read_text())
     confirmation = data["discovery"]["confirmation"]["phases"]["comparison"]
     target = data["heldout"]["target_k1536"]["phases"]["comparison"]
@@ -18,6 +18,17 @@ def pipeline_mission(root):
     barrier = "smsp__warps_issue_stalled_barrier.avg.per_cycle_active"
     profiles = data["profiles"]
     return {
+        "hardware": "NVIDIA RTX 4060 Ti",
+        "shape_mnk": data["discovery"]["confirmation"]["shape_mnk"],
+        "confirmation_stage2_us": confirmation["candidate_median_ms"] * 1000,
+        "confirmation_stage3_us": confirmation["baseline_median_ms"] * 1000,
+        "confirmation_interval": confirmation["bootstrap_interval"],
+        "confirmation_correctness": len(data["discovery"]["confirmation"]["correctness"]),
+        "screening_ratios": [data["discovery"][name]["phases"]["comparison"]["median_paired_ratio"]
+                             for name in ("screening_1", "screening_2")],
+        "profile_captures": verification["profile_captures"],
+        "compiler_stage2_shared_kib": data["compiler"]["stages_2"]["shared_memory_bytes"] / 1024,
+        "compiler_stage3_shared_kib": data["compiler"]["stages_3"]["shared_memory_bytes"] / 1024,
         "confirmation_ratio": confirmation["median_paired_ratio"],
         "favorable_pairs": confirmation["stage3_favorable_pairs"],
         "total_pairs": len(confirmation["rounds"]),
