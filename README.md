@@ -8,7 +8,7 @@ National Tensor's visible repository work began October 26, 2026. During the eve
 
 ### Relationship to Matmul Inspector
 
-[Matmul Inspector](https://github.com/Lonny154/Matmul-Inspector) is an earlier independent GPU performance engineering project. It informed the FC1 workload and baseline configuration, paired timing and A/A controls, correctness gates, hashes, and compiler/profiler analysis. It had studied the same FC1 shape and stage settings before this hackathon, with an inconclusive result against PyTorch/cuBLAS. National Tensor's later stage-3-versus-stage-2 confirmation and Muse test are separate recorded experiments. The [audit](docs/HACKATHON_PROVENANCE.md) found no substantial direct or adapted Matmul Inspector implementation code in the compared tracked snapshots; rewritten or unavailable source cannot be ruled out. National Tensor currently has no repository license file, which the audit flags for owner review.
+[Matmul Inspector](https://github.com/Lonny154/Matmul-Inspector) is an earlier independent GPU performance engineering project. It informed the FC1 workload and baseline configuration, paired timing and A/A controls, correctness gates, hashes, and compiler/profiler analysis. It had studied the same FC1 shape and stage settings before this hackathon, with an inconclusive result against PyTorch/cuBLAS. National Tensor's later stage-3-versus-stage-2 confirmation and Muse test are separate recorded experiments. The [audit](docs/HACKATHON_PROVENANCE.md) found no substantial direct or adapted Matmul Inspector implementation code in the compared tracked snapshots; rewritten or unavailable source cannot be ruled out.
 
 **Demo video:** the three-minute walkthrough has been rehearsed and recorded. Playback review, final export, publication, and hackathon submission remain pending for November 4; no public video link is available yet.
 
@@ -68,3 +68,7 @@ To explore locally, install `requirements-dashboard.txt` and run `.venv/bin/pyth
 ## Research boundaries
 
 Humans review kernels and explicitly authorize every GPU experiment and Muse request. National Tensor has **not** demonstrated end-to-end autonomous optimization, proven a causal pipeline-overlap mechanism, established general improvement in Muse's reasoning, or shown production-scale or cross-GPU performance. The recorded GEMMs and toolchain are scoped experiments; the raw original runs remain local, while the public bundles let judges inspect the published numerical claims without those directories.
+
+## License
+
+National Tensor is licensed under the [Apache License 2.0](LICENSE). Copyright 2026 Daniel Lonneman; see [NOTICE](NOTICE).
