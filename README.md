@@ -2,6 +2,14 @@
 
 National Tensor connects **Meta Muse**, reviewed **Triton** kernels, real GPU measurements, and evidence checks into a research workflow. Muse proposes and critiques ideas; people approve experiments; immutable records keep measured results separate from explanations. Our hackathon result is a counterintuitive pipeline-stage latency pattern and a prospective AI prediction tested on held-out hardware.
 
+### Built During the Meta Global AI Developer Hackathon
+
+National Tensor's visible repository work began October 26, 2026. During the event, the project added the Muse-guided proposal and criticism workflow, human approval before trusted GPU runs, experiment memory, paired benchmarking and evidence checks, the pipeline-stage investigation and prospective held-out test, portable evidence bundles, and the Research and Hollywood dashboard views. The four-scene Pipeline Paradox replay and the Performance and Reliability cards present those saved results. The [provenance audit](docs/HACKATHON_PROVENANCE.md) links the code and commits behind each contribution. A commit date is evidence of when work entered this repository, not proof of when every line was first drafted.
+
+### Relationship to Matmul Inspector
+
+[Matmul Inspector](https://github.com/Lonny154/Matmul-Inspector) is an earlier independent GPU performance engineering project. It informed the FC1 workload and baseline configuration, paired timing and A/A controls, correctness gates, hashes, and compiler/profiler analysis. It had studied the same FC1 shape and stage settings before this hackathon, with an inconclusive result against PyTorch/cuBLAS. National Tensor's later stage-3-versus-stage-2 confirmation and Muse test are separate recorded experiments. The [audit](docs/HACKATHON_PROVENANCE.md) found no substantial direct or adapted Matmul Inspector implementation code in the compared tracked snapshots; rewritten or unavailable source cannot be ruled out. National Tensor currently has no repository license file, which the audit flags for owner review.
+
 **Demo video:** the three-minute walkthrough has been rehearsed and recorded. Playback review, final export, publication, and hackathon submission remain pending for November 4; no public video link is available yet.
 
 ## Featured result: more pipeline stages, faster GEMM
