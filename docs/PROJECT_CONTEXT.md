@@ -1,6 +1,6 @@
 # National Tensor — Project Context
 
-**Research handoff for the November 4, 2026 hackathon submission.** Read this with the [root README](../README.md); verify saved artifacts before making a new scientific claim. This handoff summarizes current state and leaves the earlier protocols as historical records.
+**Status as of November 2, 2026; research handoff for the November 4 hackathon submission.** Read this with the [root README](../README.md); verify saved artifacts before making a new scientific claim. This handoff summarizes current state and leaves the earlier protocols as historical records.
 
 ## Purpose and evidence rules
 
@@ -19,6 +19,14 @@ The current judge-facing result is the [pipeline-stage consolidated report](pipe
 
 The compiler and profile observations make latency hiding plausible, but another lowered-code scheduling effect, cache behavior, and timing state remain alternatives. No production or cross-GPU generalization is established. The next priority is the hackathon demo and final submission, using these exact labels and limitations, rather than additional experiments or evidence-schema development.
 
+## Completed demo experience
+
+Merged PRs [#5](https://github.com/Lonny154/NationalTensor/pull/5)–[#8](https://github.com/Lonny154/NationalTensor/pull/8) added the evidence-grounded Pipeline Paradox replay, completed its four-scene Hollywood parody (**Anomaly → Investigation → Prediction → Reveal**), and made **Reveal the Real Research →** close the replay and open Research Overview in Research Mode. The scenes are dramatization, use saved verified evidence, and make no live GPU or Muse request. The reveal preserves the distinction between Muse's directionally matching forecast and its **inconclusive** preregistered score.
+
+Research Overview introduces the project, method, finding, and limitations, then links to the technical report and portable bundle. Performance now features the verified independent confirmation ratio, latency bars, favorable pairs, interval, and correctness. Reliability features the verified occupancy inversion and inconclusive held-out forecast, with expandable technical detail. Both featured sections require a valid `public_pipeline_evidence/` bundle and show an unavailable state if verification fails; historical records remain accessible. These changes present existing evidence and add no experiment or benchmark. See the [dashboard guide](dashboard.md).
+
+The three-minute judge demo has been **rehearsed and recorded**. Its planned path is Hollywood replay → Research Overview → Performance → Reliability → report and evidence links. The recording has **not been submitted or published** as of this handoff.
+
 ## Other research and historical boundaries
 
 - **Experiments 003–004:** a human-reviewed mask-hoisting source pair passed scoped correctness and compiled equivalently for the tested shapes, so timing was skipped. The original Muse-generated kernel was not executed. See the [debrief](muse_research_debrief.md) and [partial-boundary protocol](experiment_004.md).
@@ -32,7 +40,7 @@ These records do not demonstrate end-to-end autonomous optimization, a causal pi
 
 ## Repository and verification
 
-The release branch is `hackathon-research-release`, based on local `main` at `385b222` when prepared. The original `evaluations/` directories, API credentials, raw private model requests/responses, and virtual environment are excluded from the public release. Historical protocols remain linked and unchanged unless a separately documented correction is needed.
+The current reviewed `main` includes merged PRs #5–#8 (through `3698ebe`); `hackathon-research-release` was the earlier release-preparation branch, not the current head. The original `evaluations/` directories, API credentials, raw private model requests/responses, and virtual environment are excluded from the public release. Historical protocols remain linked and unchanged unless a separately documented correction is needed.
 
 Run from the repository root:
 
@@ -45,6 +53,9 @@ python verify_public_evidence.py public_evidence
 
 The two verifiers and CPU tests make no GPU or Muse request. The listed broader tests validate ignored original records and need an artifact-bearing checkout; source-only clones can run the portable verifiers and the bundle portability/tamper tests selected in the README. The dashboard displays whichever saved local records are present. Reproducing original GPU timings requires compatible hardware, a suitable toolchain, source snapshots, and separately approved runs.
 
-## Submission priority
+## Remaining submission checklist — November 4 deadline
 
-Prepare a short demo that shows the measured stage inversion, the four-capture hardware clues, Muse's **prospective** forecast, and its **inconclusive** held-out score. Link the consolidated report and both portable bundles in the submission. Before November 4, verify the demo playback, README links, bundle integrity, branch state, and submission text. Do not imply that the profile proves causality or that Muse passed the frozen prediction criterion.
+- Review the recorded three-minute demo for playback, legible evidence, and accurate **inconclusive** forecast wording; finalize its export.
+- Verify the two portable bundles, README/report links, and final branch state after documentation changes.
+- Prepare the submission text and links to the demo, consolidated report, and both portable bundles; keep the causal and generalization limits explicit.
+- Upload or publish the recording as required, then submit the hackathon entry by November 4. Record the final URLs and submission confirmation only after those actions occur.
