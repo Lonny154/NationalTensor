@@ -10,11 +10,13 @@ National Tensor's visible repository work began October 26, 2026. During the eve
 
 [Matmul Inspector](https://github.com/Lonny154/Matmul-Inspector) is an earlier independent GPU performance engineering project. It informed the FC1 workload and baseline configuration, paired timing and A/A controls, correctness gates, hashes, and compiler/profiler analysis. It had studied the same FC1 shape and stage settings before this hackathon, with an inconclusive result against PyTorch/cuBLAS. National Tensor's later stage-3-versus-stage-2 confirmation and Muse test are separate recorded experiments. The [audit](docs/HACKATHON_PROVENANCE.md) found no substantial direct or adapted Matmul Inspector implementation code in the compared tracked snapshots; rewritten or unavailable source cannot be ruled out.
 
-**Demo video:** the three-minute walkthrough has been rehearsed and recorded. Playback review, final export, publication, and hackathon submission remain pending for November 4; no public video link is available yet.
+**Demo video:** the three-minute walkthrough is recorded. **YouTube URL: https://www.youtube.com/watch?v=IWWySl8vPUI**.
 
 ## Featured result: more pipeline stages, faster GEMM
 
 On an **RTX 4060 Ti**, we compared the same reviewed FP16 GEMM at **512×3072×768** with Triton `num_stages=3` and `num_stages=2`. The tile was `64×128×32` with four warps. In a separate, independently prepared confirmation session, stage 3 had a **0.956221 median paired stage-3/stage-2 CUDA-event latency ratio**, with **13 of 14 pairs** favoring stage 3. Two earlier screening processes showed the same direction. Every recorded correctness check passed.
+
+That ratio corresponds to approximately **4.4% lower latency** (`100 × (1 − 0.956221) = 4.3779%`). It is the median of the paired stage-3/stage-2 ratios, **not** a ratio of the separately reported stage-latency medians.
 
 The result is interesting because the variant with **higher measured active-warps occupancy was slower**. In a four-capture A–B–B–A Nsight Compute sweep, stage 2 had 27.51% active warps versus 15.86% for stage 3, while its recorded long-scoreboard and barrier stall pressure was higher. Saved compiler artifacts show different asynchronous-copy buffering and wait policies. These are concrete clues, but **the cause remains unresolved**: the counters do not directly time a particular wait instruction, and cache, code scheduling, and measurement state remain competing explanations.
 
@@ -51,7 +53,25 @@ python public_pipeline_evidence/verify.py public_pipeline_evidence
 python verify_public_evidence.py public_evidence
 ```
 
-For a source-only CPU test of bundle portability and tamper detection, install `pytest` and run:
+Bundle verification establishes internal integrity and arithmetic consistency. Reproducing GPU measurements requires compatible NVIDIA hardware, driver/CUDA and profiler tools, and the recorded Python, PyTorch, and Triton versions. The confirmation used an RTX 4060 Ti on WSL2 with NVIDIA driver 617.42, Python 3.13.11, PyTorch 2.11.0+cu128 (CUDA 12.8), and Triton 3.6.0; the profile plan records Nsight Compute 2026.2.1.0. The featured pipeline/prospective original run directories are local and ignored by Git; the [pipeline report](docs/pipeline_stage_consolidated_report.md) and [public bundle](public_pipeline_evidence/README.md) describe what can be examined without them.
+
+The [evidence-access guide](docs/EVIDENCE_ACCESS.md) maps historical local-only links to the existing public exports and explains the decision to keep original evaluation records local. The bundles do not independently authenticate the exact Muse request-before-experiment chronology. Four frozen historical documents retain their original local links because changing their bytes would break the preserved study's hash validation.
+
+### Fresh-clone setup
+
+Create a virtual environment with Python 3.13, then install the **dashboard runtime** dependencies:
+
+```bash
+python3.13 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dashboard.txt
+.venv/bin/python dashboard_app.py
+```
+
+Open `http://127.0.0.1:8501/`. The dashboard makes no Muse request or GPU run merely by starting or viewing saved evidence. Its current import graph needs Flask, the OpenAI Python SDK, python-dotenv, PyTorch, and Triton even for a CPU-only viewing session. `requirements-dashboard.txt` pins the versions verified in the development environment; select a compatible PyTorch build for your platform. Live Muse actions additionally require `MODEL_API_KEY` in the server environment or an ignored `.env` file and explicit user action.
+
+**Optional GPU research environment:** use a compatible NVIDIA GPU and driver, CUDA-capable PyTorch build, and Triton. The recorded measurement environment used the versions above; the profiler investigation additionally used Nsight Compute 2026.2.1.0 from CUDA 13.3. GPU experiments require separate human authorization and their documented run protocols. Installing dashboard dependencies alone does not reproduce the recorded GPU results.
+
+For a source-only CPU test of bundle portability and tamper detection, install the locally verified `pytest==9.1.1` and run:
 
 ```bash
 .venv/bin/python -m pytest -q tests/test_pipeline_public_evidence.py -k "public_bundle_verifies_without_local_evaluations or tampered_pair_or_manifest_is_rejected"
@@ -63,7 +83,7 @@ In an artifact-bearing development checkout, run the broader CPU-only workflow t
 .venv/bin/python -m pytest -q tests/test_pipeline_public_evidence.py tests/test_pipeline_stage_discovery.py tests/test_pipeline_stage_profile_sweep.py tests/test_prospective_k_depth_test.py tests/test_muse_pipeline_hypothesis_study.py
 ```
 
-To explore locally, install `requirements-dashboard.txt` and run `.venv/bin/python dashboard_app.py`, then open `http://127.0.0.1:8501/`. The dashboard displays whichever preserved local records are available; the original run directories are intentionally absent from a source-only clone. The [dashboard guide](docs/dashboard.md) describes its evidence views and demo boundaries. The [project context](docs/PROJECT_CONTEXT.md) is the handoff for contributors.
+The dashboard displays whichever preserved local records are available; the original run directories are intentionally absent from a source-only clone. The [dashboard guide](docs/dashboard.md) describes its evidence views and demo boundaries. The [project context](docs/PROJECT_CONTEXT.md) is the handoff for contributors.
 
 ## Research boundaries
 
