@@ -13,7 +13,7 @@ The server binds to `127.0.0.1` with debug mode disabled. Generated source and
 model text are displayed through Flask's escaped templates; they are never
 imported, compiled, approved, or executed.
 
-Install the small web dependency in the repository environment, then launch:
+For a fresh clone, follow the [README setup](../README.md#fresh-clone-setup). The dashboard runtime requirements include Flask, OpenAI SDK, python-dotenv, PyTorch, and Triton because of current imports, even when viewing saved evidence without a GPU. Then launch:
 
 ```bash
 .venv/bin/python -m pip install -r requirements-dashboard.txt
@@ -34,7 +34,7 @@ explicit. Both modes use the same protected forms and validated evidence.
 
 ### Pipeline Paradox recording guide
 
-The three-minute judge video has been rehearsed and recorded; playback review, final export, publication, and submission are pending. Its path is **Hollywood Mode → Research Overview → Performance → Reliability → Closing**. Start the Hollywood replay at `/research`, advance through its four scenes, and select **Reveal the Real Research →** to land on Research Overview. After a short introduction, open **Performance** and keep the featured Pipeline Paradox card in frame: point to the independent confirmation ratio, the two latency bars, 13/14 favorable pairs, and the descriptive interval. Then open **Reliability**: compare the occupancy bars, show the inconclusive held-out score, and expand the technical detail only if time allows. Close on the consolidated report and portable evidence links. At 1920×1080, the featured content appears above the older expandable records; use normal browser zoom and avoid scrolling into the large historical tables during the short explanation.
+The three-minute judge video is recorded; its final published URL is still needed in the [README](../README.md). Its path is **Hollywood Mode → Research Overview → Performance → Reliability → Closing**. Start the Hollywood replay at `/research`, advance through its four scenes, and select **Reveal the Real Research →** to land on Research Overview. After a short introduction, open **Performance** and keep the featured Pipeline Paradox card in frame: point to the independent confirmation ratio, the two latency bars, 13/14 favorable pairs, and the descriptive interval. Then open **Reliability**: compare the occupancy bars, show the inconclusive held-out score, and expand the technical detail only if time allows. Close on the consolidated report and portable evidence links. At 1920×1080, the featured content appears above the older expandable records; use normal browser zoom and avoid scrolling into the large historical tables during the short explanation.
 
 **Provenance disclosure for the submission:** Early in Research Overview, allow about 10–15 seconds for: “Matmul Inspector was my earlier GPU analysis project. National Tensor's Muse workflow, these new measurements, evidence bundle, and dashboard were built for this hackathon. The prior project informed our benchmark method and FC1 setup.” See the [provenance audit](HACKATHON_PROVENANCE.md). The existing recording was not inspected or edited for this documentation update; check whether its narration already makes this distinction before publishing it.
 

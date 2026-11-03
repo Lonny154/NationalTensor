@@ -1,5 +1,14 @@
 {% from 'hollywood/macros.html' import sequence %}
 {% from 'hollywood/dialogue.html' import lines %}
+<link rel="stylesheet" href="{{ url_for('static', filename='hollywood-intro.css') }}">
+<script src="{{ url_for('static', filename='hollywood-intro.js') }}" defer></script>
+<div class="hollywood-intro-entry"><span>FINAL RECORDING / FICTIONAL OPENING</span><button type="button" class="action-button" id="hollywood-intro-open">Open Hollywood presentation</button></div>
+<div id="hollywood-intro" class="hollywood-intro" hidden role="dialog" aria-modal="true" aria-label="National Tensor Hollywood opening" data-overview-url="{{ url_for('home', view='overview') }}">
+  <div class="hollywood-intro-noise" aria-hidden="true"></div>
+  <header class="hollywood-intro-header"><span>HOLLYWOOD MODE / FICTIONAL REPLAY / NO LIVE GPU</span><button type="button" id="hollywood-intro-close" aria-label="Close Hollywood opening">× Close</button></header>
+  <main class="hollywood-intro-stage" id="hollywood-intro-stage" tabindex="-1" aria-live="polite"></main>
+  <footer class="hollywood-intro-footer"><span id="hollywood-intro-progress">SCENE 01 / 03 · BEAT 01 / 04</span><div class="hollywood-intro-actions"><button type="button" id="hollywood-intro-previous">← Previous</button><button type="button" id="hollywood-intro-play" aria-pressed="false">Pause motion</button><button type="button" id="hollywood-intro-next">Next →</button><button type="button" id="hollywood-intro-restart">Restart</button><button type="button" id="hollywood-intro-research" hidden>Continue to Research Overview →</button></div><span>SPACE / → next · ← previous · R restart · P motion · H controls · ESC close</span></footer>
+</div>
 <div class="mission-kicker"><span>NT / HUMAN AUTHORIZATION REQUIRED</span><span>THE HEIST · TRUSTED DIAGNOSTIC ONLY</span></div>
 <section class="heist-heading"><div><div class="eyebrow">MISSION BRIEFING / SAVED MUSE ADVISORY</div><h1>{{ mission.title }}</h1><p>{{ mission.narrative }}</p></div><a class="mission-cta" href="#{{ mission.anchor }}">{{ mission.action }} ↓</a></section>
 <div class="mission-entry" aria-label="Operation Stolen Cycles">

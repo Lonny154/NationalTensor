@@ -1,0 +1,45 @@
+/* Scoped to the fictional Hollywood opening; Research Mode and mission replays are untouched. */
+.hollywood-intro-entry{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 22px;padding:19px 24px;border:1px solid #b38a59;background:linear-gradient(100deg,#181522,#101819);font:700 13px/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#f2cb9a}
+.hollywood-intro[hidden],.hollywood-intro [hidden]{display:none!important}
+.hollywood-intro{position:fixed;inset:0;z-index:1100;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:auto;background:#020204;color:#f8f4ea;font-family:Georgia,serif;isolation:isolate}
+.hollywood-intro-noise{position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 48%,#1b3040 0%,#05070d 52%,#020204 85%)}
+.hollywood-intro-header,.hollywood-intro-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px clamp(24px,4vw,80px);font:700 clamp(12px,.9vw,16px)/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#d7c7b3}
+.hollywood-intro-header{border-bottom:1px solid #63564b}.hollywood-intro-footer{border-top:1px solid #63564b;flex-wrap:wrap}
+.hollywood-intro[data-controls="hidden"] .hollywood-intro-header,.hollywood-intro[data-controls="hidden"] .hollywood-intro-footer{opacity:0;pointer-events:none}
+.hollywood-intro[data-motion="paused"] .intro-matrix,.hollywood-intro[data-motion="paused"] .intro-matrix-block span,.hollywood-intro[data-motion="paused"] .intro-analysis:after{animation-play-state:paused!important}
+.hollywood-intro button{border:1px solid #ad936e;border-radius:4px;background:#1b2530;color:#fff2db;padding:10px 16px;cursor:pointer;font:700 14px/1.2 ui-monospace,monospace}
+.hollywood-intro button:hover:not(:disabled),.hollywood-intro button:focus-visible{background:#354657;outline:2px solid #e6bd82;outline-offset:2px}
+.hollywood-intro button:disabled{opacity:.4;cursor:default}
+.hollywood-intro-actions{display:flex;gap:9px;flex-wrap:wrap}
+.hollywood-intro-stage{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;overflow:hidden;padding:36px clamp(25px,5vw,100px);text-align:center}
+.hollywood-intro-stage:focus{outline:none}
+.intro-scene-label{position:absolute;top:26px;left:clamp(25px,5vw,100px);margin:0;color:#eac68c;font:700 13px/1.3 ui-monospace,monospace;letter-spacing:.2em}
+.intro-big-line,.intro-error,.intro-title{max-width:1500px;margin:0;font-weight:700;line-height:1.05;letter-spacing:.05em;text-wrap:balance;text-shadow:0 0 42px #b68e6677;animation:intro-appear .35s ease-out both}
+.hollywood-intro .intro-big-line{position:relative;z-index:1;font-size:clamp(52px,7.2vw,132px)}
+.intro-matrix{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,60px);overflow:hidden;color:#8395a3;opacity:.15;filter:blur(2.5px);animation:intro-drift 10s ease-in-out both;transition:opacity .35s ease;pointer-events:none}
+.hollywood-intro-stage[data-scene="opening"]:has(.intro-big-line) .intro-matrix{opacity:.08}
+.intro-matrix-block{display:grid;grid-template-columns:repeat(2,1fr);gap:9px 25px;padding:18px 28px;border-left:3px solid currentColor;border-right:3px solid currentColor;font:300 clamp(44px,4.8vw,88px)/1 ui-monospace,monospace}
+.intro-matrix-block span{animation:intro-cell 2.2s ease-in-out infinite alternate}.intro-matrix-block span:nth-child(2n){animation-delay:.5s}.intro-matrix-block span:nth-child(3n){animation-delay:1s}
+.intro-matrix-op{font:300 clamp(52px,5.5vw,105px)/1 ui-monospace,monospace}
+.hollywood-intro .intro-console-title{margin:0 0 28px;font:700 clamp(32px,4vw,68px)/1.1 ui-monospace,monospace;letter-spacing:.1em;color:#e5c89e}
+.intro-exchange{width:min(1400px,100%);display:grid;gap:13px}
+.intro-exchange p{margin:0;padding:13px 22px;border-left:6px solid #c59b60;background:#17202bed;text-align:left;font:700 clamp(23px,2.25vw,39px)/1.24 ui-monospace,monospace;letter-spacing:.01em}
+.intro-exchange .intro-engineer{border-color:#8ad0ca;background:#0f3032ed}
+.intro-analysis{position:relative;overflow:hidden;margin:0;padding:22px 28px;border:2px solid #75adb2;background:#071a1f;color:#b8f6f2;font:700 clamp(31px,4vw,69px)/1.2 ui-monospace,monospace}
+.intro-analysis:after{content:"";position:absolute;bottom:0;left:0;width:25%;height:3px;background:#8bd4d7;box-shadow:0 0 12px #8bd4d7;animation:intro-analysis-scan 2.2s linear infinite}
+.hollywood-intro-stage[data-scene="title"][data-beat="1"] .intro-analysis:after{animation-play-state:paused}
+.hollywood-intro-stage[data-scene="title"][data-beat="1"]:after{content:"";position:absolute;inset:0;background:#0009;pointer-events:none;animation:intro-darken .55s ease-out both}
+.intro-fiction-note{font:700 clamp(14px,1.25vw,22px)/1.4 ui-monospace,monospace;letter-spacing:.12em;color:#cdbb9f}
+.hollywood-intro-stage[data-scene="title"][data-beat="2"]{background:radial-gradient(ellipse at center,#3a0c12,#090306 70%)}
+.hollywood-intro .intro-error{padding:22px 30px;border:3px solid #e76661;background:#4d1619;font:700 clamp(53px,7vw,125px)/1.08 ui-monospace,monospace;color:#fff2ec;box-shadow:0 0 55px #d8424a77;animation:intro-error .28s ease-out both}
+.hollywood-intro-stage[data-scene="title"][data-beat="3"]{background:#000}
+.hollywood-intro .intro-title{font-size:clamp(70px,10vw,180px);color:#ffdfa8}
+.intro-tagline{margin:26px 0 0;font:700 clamp(26px,3vw,54px)/1.2 ui-monospace,monospace;letter-spacing:.11em;color:#f8efe1;animation:intro-appear .5s ease-out both}
+@keyframes intro-appear{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes intro-drift{from{transform:translateY(-2%)}to{transform:translateY(2%)}}
+@keyframes intro-cell{from{opacity:.45}to{opacity:1}}
+@keyframes intro-analysis-scan{to{left:100%}}
+@keyframes intro-darken{from{opacity:0}to{opacity:1}}
+@keyframes intro-error{0%{transform:translateX(-9px) skewX(1deg)}35%{transform:translateX(6px) skewX(-.6deg)}70%{transform:translateX(-3px)}100%{transform:translateX(0)}}
+@media(max-width:750px){.hollywood-intro-entry{align-items:flex-start;flex-direction:column}.hollywood-intro-header,.hollywood-intro-footer{padding:14px 20px}.hollywood-intro-stage{padding:50px 20px}.intro-scene-label{left:20px}.intro-exchange p{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.hollywood-intro *, .hollywood-intro *:before, .hollywood-intro *:after{animation:none!important;transition:none!important}}

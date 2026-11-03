@@ -1,0 +1,20 @@
+# Evidence access from a source-only clone
+
+The original pipeline discovery, profiler, prospective Muse, and held-out run directories remain local and are ignored by Git. They have **not** been modified or regenerated for this submission. Earlier historical `evaluations/` files were already tracked in the repository, including some with absolute machine paths; this decision does not remove or republish them. Some historical protocols and analyses retain links to local-only paths because their bytes are included in the frozen prospective Muse study's `documentation_sha256` checks. Editing those four documents would invalidate read-only validation of the preserved forecast and held-out test. The affected documents are `research_discovery_sprint.md`, `pipeline_stage_discovery_protocol.md`, `pipeline_stage_mechanism_analysis.md`, and `pipeline_stage_profile_analysis.md`.
+
+Use the tracked exports for the published numerical claims:
+
+| Claim or record | Source-only access | Boundary |
+| --- | --- | --- |
+| Stage discovery, independent confirmation, paired timing, A/A, and four selected profiler captures | [Pipeline evidence](../public_pipeline_evidence/evidence.json) and [verification guide](../public_pipeline_evidence/README.md) | Original session JSON, manifests, raw Nsight CSV/logs, and full profile plan remain local. |
+| Confirmation compiler text | [Stage-3 TTGIR](../public_pipeline_evidence/stages_3.ttgir), [stage-2 TTGIR](../public_pipeline_evidence/stages_2.ttgir), [stage-3 PTX](../public_pipeline_evidence/stages_3.ptx), [stage-2 PTX](../public_pipeline_evidence/stages_2.ptx) | These are source-path-sanitized confirmation artifacts, not the earlier stage-reduction files linked by historical analyses. |
+| Prospective Muse prediction and held-out outcome | [Pipeline evidence](../public_pipeline_evidence/evidence.json), [protocol](prospective_pipeline_hypothesis_protocol.md), and [technical report](pipeline_stage_consolidated_report.md) | Prediction fields and source hashes are exported; exact prompt, neutral package, full setup, raw response, and request audit remain local. |
+| Experiment 005 scoped correctness and screening | [Earlier evidence](../public_evidence/evidence.json) and [summary](../public_evidence/summary.md) | Raw screening/verification results, setup outlier details, and the exploratory locality probe remain local. |
+
+The public bundles support the published numerical findings through exported paired timing, A/A, selected profiler values, prediction fields, hashes, and internal arithmetic checks. They are exported summaries and selected sanitized artifacts, **not the original evaluation records**. Their self-contained verification does not independently authenticate original GPU execution or the exact Muse request-before-experiment chronology. The repository's technical report describes the recorded order and its limits; independently examining the exact original request and target timestamps requires the local records, which are not part of this submission.
+
+## Publication decision for this submission
+
+No additional original prospective evaluation directory or compiler artifact will be published for this hackathon submission. The original forecast prompt, setup, request audit, target result, raw profiler captures, and their manifests remain local with their original contents and hashes. The target result includes a machine-specific GPU identifier, and its manifested compiler artifacts contain absolute filesystem paths; copying them unchanged would expose local machine details. No redacted or regenerated replacement is presented as an original record. Previously tracked historical evaluation files and the existing sanitized compiler-text exports remain in the repository.
+
+The existing [pipeline bundle](../public_pipeline_evidence/README.md) and [earlier evidence bundle](../public_evidence/README.md) are the submission's public evidence access points. Their verifiers check integrity and arithmetic, not independently authenticated chronology or full GPU reproducibility.
